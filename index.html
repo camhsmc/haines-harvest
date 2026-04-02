@@ -1,0 +1,1704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Haines Harvest</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #FAF6EF;
+    --warm-white: #FFF9F2;
+    --rust: #C4622D;
+    --rust-light: #E8845A;
+    --rust-dark: #9B4A1F;
+    --green: #3A6B4A;
+    --green-light: #5A8F6A;
+    --green-pale: #EBF2ED;
+    --gold: #D4A847;
+    --gold-light: #F0CC78;
+    --charcoal: #2C2C2C;
+    --warm-gray: #7A7268;
+    --border: #E8DDD0;
+    --shadow: rgba(44,28,16,0.10);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--charcoal);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ─── HEADER ─── */
+  header {
+    background: var(--green);
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.15);
+    height: 68px;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo-icon {
+    font-size: 1.8rem;
+    animation: sway 3s ease-in-out infinite;
+  }
+
+  @keyframes sway {
+    0%,100% { transform: rotate(-5deg); }
+    50% { transform: rotate(5deg); }
+  }
+
+  .logo h1 {
+    font-family: 'Playfair Display', serif;
+    color: var(--cream);
+    font-size: 1.6rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+
+  .logo span {
+    color: var(--gold-light);
+  }
+
+  nav {
+    display: flex;
+    gap: 4px;
+  }
+
+  nav button {
+    background: none;
+    border: none;
+    color: rgba(250,246,239,0.7);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 500;
+    padding: 8px 16px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+
+  nav button:hover, nav button.active {
+    background: rgba(250,246,239,0.15);
+    color: var(--cream);
+  }
+
+  nav button.active {
+    background: var(--rust);
+    color: white;
+  }
+
+  /* ─── MAIN LAYOUT ─── */
+  main {
+    max-width: 1300px;
+    margin: 0 auto;
+    padding: 2rem;
+  }
+
+  .view { display: none; animation: fadeIn 0.3s ease; }
+  .view.active { display: block; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ─── PAGE HEADERS ─── */
+  .page-header {
+    margin-bottom: 2rem;
+  }
+
+  .page-header h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.2rem;
+    color: var(--charcoal);
+    font-weight: 700;
+  }
+
+  .page-header p {
+    color: var(--warm-gray);
+    font-size: 0.95rem;
+    margin-top: 4px;
+  }
+
+  /* ─── WEEK SELECTOR ─── */
+  .week-selector {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .week-selector span {
+    font-size: 0.85rem;
+    color: var(--warm-gray);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-right: 4px;
+  }
+
+  .week-btn {
+    background: white;
+    border: 2px solid var(--border);
+    color: var(--charcoal);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 8px 20px;
+    border-radius: 24px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .week-btn:hover {
+    border-color: var(--rust-light);
+    color: var(--rust);
+  }
+
+  .week-btn.active {
+    background: var(--rust);
+    border-color: var(--rust);
+    color: white;
+    box-shadow: 0 3px 12px rgba(196,98,45,0.3);
+  }
+
+  /* ─── WEEKLY CALENDAR ─── */
+  .calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 12px;
+  }
+
+  @media (max-width: 900px) {
+    .calendar-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  .day-card {
+    background: white;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 2px 12px var(--shadow);
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+    border: 2px solid transparent;
+  }
+
+  .day-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px var(--shadow);
+    border-color: var(--rust-light);
+  }
+
+  .day-header {
+    padding: 10px 14px 8px;
+    background: var(--green);
+  }
+
+  .day-name {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(250,246,239,0.7);
+    font-weight: 600;
+  }
+
+  .theme-label {
+    font-size: 0.75rem;
+    color: var(--gold-light);
+    font-weight: 600;
+    margin-top: 2px;
+  }
+
+  .day-body {
+    padding: 14px;
+  }
+
+  .meal-emoji {
+    font-size: 1.8rem;
+    display: block;
+    margin-bottom: 8px;
+  }
+
+  .meal-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--charcoal);
+    line-height: 1.3;
+    margin-bottom: 6px;
+  }
+
+  .meal-veggie {
+    font-size: 0.72rem;
+    color: var(--green);
+    background: var(--green-pale);
+    padding: 3px 8px;
+    border-radius: 10px;
+    display: inline-block;
+    font-weight: 500;
+  }
+
+  .meal-note {
+    font-size: 0.72rem;
+    color: var(--warm-gray);
+    margin-top: 6px;
+    font-style: italic;
+    line-height: 1.4;
+  }
+
+  .leftover-badge {
+    font-size: 0.7rem;
+    background: var(--gold-light);
+    color: #7a5800;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+    display: inline-block;
+    margin-bottom: 6px;
+  }
+
+  /* ─── 4-WEEK ROTATION ─── */
+  .rotation-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+  }
+
+  @media (max-width: 900px) {
+    .rotation-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  .rotation-week {
+    background: white;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 2px 12px var(--shadow);
+  }
+
+  .rotation-week-header {
+    padding: 14px 16px;
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .rotation-week:nth-child(1) .rotation-week-header { background: var(--rust); }
+  .rotation-week:nth-child(2) .rotation-week-header { background: var(--green); }
+  .rotation-week:nth-child(3) .rotation-week-header { background: #8B6914; }
+  .rotation-week:nth-child(4) .rotation-week-header { background: #4A5568; }
+
+  .rotation-meal-row {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .rotation-meal-row:last-child { border-bottom: none; }
+
+  .rotation-day-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--warm-gray);
+    min-width: 32px;
+    padding-top: 2px;
+  }
+
+  .rotation-meal-name {
+    font-size: 0.85rem;
+    color: var(--charcoal);
+    font-weight: 500;
+    line-height: 1.4;
+  }
+
+  .rotation-emoji {
+    font-size: 1rem;
+    min-width: 20px;
+  }
+
+  /* ─── SHOPPING LIST ─── */
+  .shopping-layout {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+
+  @media (max-width: 900px) {
+    .shopping-layout { grid-template-columns: 1fr; }
+  }
+
+  .store-card {
+    background: white;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 2px 12px var(--shadow);
+  }
+
+  .store-header {
+    padding: 16px 20px;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .store-card:nth-child(1) .store-header { background: var(--rust); }
+  .store-card:nth-child(2) .store-header { background: var(--green); }
+  .store-card:nth-child(3) .store-header { background: #8B6914; }
+
+  .store-icon { font-size: 1.5rem; }
+
+  .store-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+  }
+
+  .store-subtitle {
+    font-size: 0.75rem;
+    opacity: 0.85;
+    margin-top: 1px;
+  }
+
+  .store-body { padding: 16px 20px; }
+
+  .shopping-category {
+    margin-bottom: 14px;
+  }
+
+  .shopping-category h4 {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--warm-gray);
+    font-weight: 700;
+    margin-bottom: 6px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .shopping-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 5px 0;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+
+  .shopping-item input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--border);
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.15s;
+    flex-shrink: 0;
+    margin-top: 1px;
+    position: relative;
+  }
+
+  .shopping-item input[type="checkbox"]:checked {
+    background: var(--green);
+    border-color: var(--green);
+  }
+
+  .shopping-item input[type="checkbox"]:checked::after {
+    content: '✓';
+    position: absolute;
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .shopping-item label {
+    font-size: 0.88rem;
+    color: var(--charcoal);
+    cursor: pointer;
+    line-height: 1.4;
+    transition: all 0.2s;
+  }
+
+  .shopping-item.checked label {
+    text-decoration: line-through;
+    color: var(--warm-gray);
+    opacity: 0.6;
+  }
+
+  .clear-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--warm-gray);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.78rem;
+    padding: 6px 14px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 8px;
+  }
+
+  .clear-btn:hover {
+    border-color: var(--rust-light);
+    color: var(--rust);
+  }
+
+  /* ─── RECIPE CARDS ─── */
+  .recipe-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+  }
+
+  .recipe-card {
+    background: white;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 2px 12px var(--shadow);
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    border: 2px solid transparent;
+  }
+
+  .recipe-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px var(--shadow);
+    border-color: var(--rust-light);
+  }
+
+  .recipe-card-top {
+    height: 90px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    position: relative;
+  }
+
+  .recipe-category-tag {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 3px 9px;
+    border-radius: 10px;
+    color: white;
+  }
+
+  .recipe-card-body {
+    padding: 14px 16px 16px;
+  }
+
+  .recipe-card-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--charcoal);
+    margin-bottom: 6px;
+    line-height: 1.3;
+  }
+
+  .recipe-meta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+
+  .recipe-tag {
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+  }
+
+  .tag-time { background: #FEF3C7; color: #92400E; }
+  .tag-tool { background: var(--green-pale); color: var(--green); }
+  .tag-hit { background: #FEE2E2; color: #991B1B; }
+
+  .recipe-desc {
+    font-size: 0.82rem;
+    color: var(--warm-gray);
+    line-height: 1.5;
+  }
+
+  /* ─── MODAL ─── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    animation: fadeIn 0.2s ease;
+  }
+
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--warm-white);
+    border-radius: 20px;
+    max-width: 560px;
+    width: 100%;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+    animation: slideUp 0.3s ease;
+  }
+
+  @keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  .modal-header {
+    padding: 24px 24px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  .modal-emoji { font-size: 3rem; display: block; margin-bottom: 10px; }
+
+  .modal-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--charcoal);
+  }
+
+  .modal-close {
+    background: var(--border);
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1rem;
+    color: var(--warm-gray);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+
+  .modal-close:hover { background: var(--rust-light); color: white; }
+
+  .modal-body {
+    padding: 16px 24px 24px;
+  }
+
+  .modal-section {
+    margin-bottom: 18px;
+  }
+
+  .modal-section h4 {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--warm-gray);
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .ingredient-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .ingredient-list li {
+    font-size: 0.88rem;
+    color: var(--charcoal);
+    padding: 5px 10px;
+    background: var(--cream);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .ingredient-list li::before {
+    content: '•';
+    color: var(--rust);
+    font-weight: 700;
+  }
+
+  .step-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .step-list li {
+    font-size: 0.88rem;
+    color: var(--charcoal);
+    line-height: 1.5;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .step-num {
+    background: var(--rust);
+    color: white;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    font-size: 0.72rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .kids-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #FFF3CD;
+    color: #856404;
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 10px;
+    margin-top: 6px;
+  }
+
+  /* ─── PRINT BUTTON ─── */
+  .print-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: white;
+    border: 2px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 20px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .print-bar-text {
+    font-size: 0.88rem;
+    color: var(--warm-gray);
+  }
+
+  .print-bar-text strong {
+    color: var(--charcoal);
+    font-weight: 600;
+  }
+
+  .print-btn {
+    background: var(--green);
+    color: white;
+    border: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 600;
+    padding: 10px 22px;
+    border-radius: 24px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+    box-shadow: 0 3px 10px rgba(58,107,74,0.25);
+  }
+
+  .print-btn:hover {
+    background: var(--green-light);
+    transform: translateY(-1px);
+    box-shadow: 0 5px 16px rgba(58,107,74,0.3);
+  }
+
+  /* ─── PRINT STYLES ─── */
+  @media print {
+    @page {
+      size: letter landscape;
+      margin: 0.5in;
+    }
+
+    body {
+      background: white !important;
+      font-size: 10px;
+    }
+
+    header, nav, .view:not(.active), .week-selector,
+    .print-bar, .page-header, .clear-btn,
+    .footer-strip, .modal-overlay {
+      display: none !important;
+    }
+
+    main { padding: 0 !important; max-width: 100% !important; }
+
+    #view-shopping { display: block !important; }
+
+    .shopping-layout {
+      display: grid !important;
+      grid-template-columns: repeat(3, 1fr) !important;
+      gap: 14px !important;
+    }
+
+    .store-card {
+      box-shadow: none !important;
+      border: 1.5px solid #ccc !important;
+      border-radius: 8px !important;
+      break-inside: avoid;
+    }
+
+    .store-header {
+      padding: 10px 14px !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .store-card:nth-child(1) .store-header { background: #C4622D !important; }
+    .store-card:nth-child(2) .store-header { background: #3A6B4A !important; }
+    .store-card:nth-child(3) .store-header { background: #8B6914 !important; }
+
+    .store-name { font-size: 11px !important; }
+    .store-subtitle { font-size: 8px !important; }
+    .store-body { padding: 10px 12px !important; }
+
+    .shopping-category { margin-bottom: 8px !important; }
+    .shopping-category h4 { font-size: 7px !important; margin-bottom: 4px !important; }
+
+    .shopping-item { padding: 2px 0 !important; }
+    .shopping-item label { font-size: 8.5px !important; }
+    .shopping-item input[type="checkbox"] {
+      width: 11px !important;
+      height: 11px !important;
+      border: 1.5px solid #999 !important;
+      border-radius: 2px !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .shopping-item.checked label {
+      text-decoration: line-through !important;
+      color: #aaa !important;
+    }
+
+    .print-meal-header {
+      display: block !important;
+    }
+  }
+
+  /* Print meal header — hidden on screen, shown on print */
+  .print-meal-header {
+    display: none;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #3A6B4A;
+  }
+
+  .print-meal-header h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 15px;
+    color: #2C2C2C;
+    margin-bottom: 6px;
+  }
+
+  .print-meal-header .print-meal-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 4px;
+  }
+
+  .print-meal-chip {
+    font-size: 7.5px;
+    background: #EBF2ED;
+    color: #2C2C2C;
+    padding: 2px 7px;
+    border-radius: 8px;
+    font-weight: 600;
+    border: 1px solid #ccc;
+  }
+
+  .print-footer {
+    display: none;
+    text-align: center;
+    font-size: 7px;
+    color: #aaa;
+    margin-top: 10px;
+  }
+
+  @media print {
+    .print-footer { display: block !important; }
+  }
+
+  /* ─── FOOTER STRIP ─── */
+  .footer-strip {
+    background: var(--green);
+    color: rgba(250,246,239,0.6);
+    text-align: center;
+    padding: 16px;
+    font-size: 0.78rem;
+    margin-top: 3rem;
+    letter-spacing: 0.03em;
+  }
+
+  .footer-strip strong { color: var(--gold-light); }
+
+  /* ─── HERO BANNER (weekly view) ─── */
+  .week-hero {
+    background: linear-gradient(135deg, var(--green) 0%, var(--rust-dark) 100%);
+    border-radius: 20px;
+    padding: 24px 28px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .week-hero h3 {
+    font-family: 'Playfair Display', serif;
+    color: white;
+    font-size: 1.4rem;
+    font-weight: 700;
+  }
+
+  .week-hero p {
+    color: rgba(255,255,255,0.75);
+    font-size: 0.88rem;
+    margin-top: 4px;
+  }
+
+  .hero-badges {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .hero-badge {
+    background: rgba(255,255,255,0.18);
+    color: white;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 5px 12px;
+    border-radius: 14px;
+    backdrop-filter: blur(4px);
+  }
+
+  /* ─── MOBILE OPTIMIZATIONS (≤640px) ─── */
+  @media (max-width: 640px) {
+
+    /* Header: tighten up, shrink logo text */
+    header {
+      padding: 0 1rem;
+      height: 56px;
+    }
+
+    .logo h1 { font-size: 1.2rem; }
+    .logo-icon { font-size: 1.4rem; }
+
+    /* Nav: scrollable pill row instead of wrapping */
+    nav {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      gap: 2px;
+    }
+    nav::-webkit-scrollbar { display: none; }
+    nav button {
+      font-size: 0.72rem;
+      padding: 6px 11px;
+      white-space: nowrap;
+    }
+
+    /* Main: tighten padding */
+    main { padding: 1rem; }
+
+    /* Page headers */
+    .page-header h2 { font-size: 1.6rem; }
+
+    /* Week selector: wrap cleanly */
+    .week-selector { gap: 6px; margin-bottom: 1.25rem; }
+    .week-btn { padding: 7px 14px; font-size: 0.8rem; }
+
+    /* Hero banner: stack vertically */
+    .week-hero {
+      padding: 16px 18px;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .week-hero h3 { font-size: 1.1rem; }
+    .week-hero p { font-size: 0.8rem; }
+    .hero-badges { gap: 6px; }
+    .hero-badge { font-size: 0.7rem; padding: 4px 10px; }
+
+    /* Calendar: single column on mobile */
+    .calendar-grid {
+      grid-template-columns: 1fr !important;
+      gap: 10px;
+    }
+
+    /* Day cards: horizontal layout on mobile */
+    .day-card {
+      display: flex;
+      flex-direction: row;
+      border-radius: 14px;
+    }
+
+    .day-header {
+      padding: 12px 10px;
+      min-width: 70px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+
+    .day-name { font-size: 0.68rem; }
+    .theme-label { font-size: 0.62rem; }
+
+    .day-body {
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      flex: 1;
+    }
+
+    .meal-emoji { font-size: 1.4rem; margin-bottom: 4px; }
+    .meal-name { font-size: 0.88rem; margin-bottom: 4px; }
+    .meal-note { font-size: 0.68rem; margin-top: 4px; }
+
+    /* Rotation: single column */
+    .rotation-grid {
+      grid-template-columns: 1fr !important;
+      gap: 12px;
+    }
+
+    /* Shopping: already 1-col at 900px, just tighten spacing */
+    .store-body { padding: 12px 14px; }
+    .shopping-category h4 { font-size: 0.65rem; }
+    .shopping-item label { font-size: 0.84rem; }
+
+    /* Print bar: stack on mobile */
+    .print-bar {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .print-btn { width: 100%; justify-content: center; }
+
+    /* Recipe grid: single column */
+    .recipe-grid {
+      grid-template-columns: 1fr !important;
+      gap: 12px;
+    }
+
+    /* Modal: full screen feel on mobile */
+    .modal-overlay { padding: 0; align-items: flex-end; }
+    .modal {
+      border-radius: 20px 20px 0 0;
+      max-height: 92vh;
+      width: 100%;
+    }
+    .modal-header { padding: 18px 18px 0; }
+    .modal-title { font-size: 1.3rem; }
+    .modal-body { padding: 12px 18px 32px; }
+
+    /* Footer */
+    .footer-strip { font-size: 0.72rem; padding: 12px; margin-top: 2rem; }
+  }
+
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <span class="logo-icon">🌾</span>
+    <h1>Haines <span>Harvest</span></h1>
+  </div>
+  <nav>
+    <button class="active" onclick="showView('weekly')">This Week</button>
+    <button onclick="showView('rotation')">4-Week Plan</button>
+    <button onclick="showView('shopping')">Grocery Lists</button>
+    <button onclick="showView('recipes')">Recipes</button>
+  </nav>
+</header>
+
+<main>
+
+  <!-- ═══════════════════════════════════════
+       VIEW 1: WEEKLY CALENDAR
+  ═══════════════════════════════════════ -->
+  <div id="view-weekly" class="view active">
+    <div class="page-header">
+      <h2>Weekly Dinner Plan</h2>
+      <p>Select a week to see the full dinner lineup with veggie sides.</p>
+    </div>
+
+    <div class="week-selector">
+      <span>Week:</span>
+      <button class="week-btn active" onclick="setWeek(1,this)">Week 1</button>
+      <button class="week-btn" onclick="setWeek(2,this)">Week 2</button>
+      <button class="week-btn" onclick="setWeek(3,this)">Week 3</button>
+      <button class="week-btn" onclick="setWeek(4,this)">Week 4</button>
+    </div>
+
+    <div class="week-hero" id="week-hero">
+      <div>
+        <h3 id="hero-title">Week 1</h3>
+        <p id="hero-sub">Marry Me Pasta · Taco Bar · Tortilla Soup · Chicken Tenders · Pizza · Flank Steak · Fried Rice</p>
+      </div>
+      <div class="hero-badges">
+        <span class="hero-badge">🧒 Kid Friendly</span>
+        <span class="hero-badge">⏱ 20–45 min nights</span>
+        <span class="hero-badge">🥦 Veggies every night</span>
+      </div>
+    </div>
+
+    <div class="calendar-grid" id="calendar-grid"></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       VIEW 2: 4-WEEK ROTATION
+  ═══════════════════════════════════════ -->
+  <div id="view-rotation" class="view">
+    <div class="page-header">
+      <h2>4-Week Rotation</h2>
+      <p>Complete at week 4, then restart. Same themes every week — new meals throughout.</p>
+    </div>
+
+    <div class="rotation-grid" id="rotation-grid"></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       VIEW 3: SHOPPING LISTS
+  ═══════════════════════════════════════ -->
+  <div id="view-shopping" class="view">
+    <div class="page-header">
+      <h2>Grocery Lists</h2>
+      <p>Auto-generated by store. Check off items as you shop — checks are saved automatically.</p>
+    </div>
+
+    <div class="week-selector">
+      <span>Show list for:</span>
+      <button class="week-btn active" onclick="setShoppingWeek(1,this)">Week 1</button>
+      <button class="week-btn" onclick="setShoppingWeek(2,this)">Week 2</button>
+      <button class="week-btn" onclick="setShoppingWeek(3,this)">Week 3</button>
+      <button class="week-btn" onclick="setShoppingWeek(4,this)">Week 4</button>
+    </div>
+
+    <div class="print-bar">
+      <span class="print-bar-text"><strong>Ready to shop?</strong> List is organized by store. Print or save as PDF for an easy one-page reference.</span>
+      <button class="print-btn" onclick="printList()">🖨️ Print / Save as PDF</button>
+    </div>
+
+    <!-- Shown only on print -->
+    <div class="print-meal-header" id="print-meal-header">
+      <h2>🌾 Haines Harvest — Week <span id="print-week-num">1</span> Shopping List</h2>
+      <div class="print-meal-row" id="print-meal-chips"></div>
+    </div>
+
+    <div class="shopping-layout" id="shopping-layout"></div>
+
+    <div class="print-footer">Haines Harvest · Haines Family · Hudson, WI</div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       VIEW 4: RECIPE CARDS
+  ═══════════════════════════════════════ -->
+  <div id="view-recipes" class="view">
+    <div class="page-header">
+      <h2>Recipe Cards</h2>
+      <p>All 15 family-tested dinners. Tap any card for ingredients and steps.</p>
+    </div>
+    <div class="recipe-grid" id="recipe-grid"></div>
+  </div>
+
+</main>
+
+<!-- RECIPE MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <div>
+        <span class="modal-emoji" id="modal-emoji"></span>
+        <div class="modal-title" id="modal-title"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<footer class="footer-strip">
+  Made with ❤️ for the <strong>Haines Family</strong> · 6 hungry people · 4-week rotation · Hudson, WI
+</footer>
+
+<script>
+// ═══════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════
+
+const themes = {
+  Mon: 'Pasta Night', Tue: 'Taco Night', Wed: 'Crockpot Night',
+  Thu: 'Sheet Pan / Air Fryer', Fri: 'Pizza Night',
+  Sat: 'Grill Night', Sun: 'Leftover Remix'
+};
+
+const weekData = {
+  1: [
+    { day:'Mon', emoji:'🍝', name:'Marry Me Pasta with Chicken', veggie:'Steamed broccoli', note:'House favorite — all kids approved!', isHit:true, recipeKey:'marry-me-pasta' },
+    { day:'Tue', emoji:'🌮', name:'Taco Bar', veggie:'Corn on the side', note:"11yo makes refried bean & cheese burritos", recipeKey:'taco-bar' },
+    { day:'Wed', emoji:'🍲', name:'Crockpot Chicken Tortilla Soup', veggie:'Corn & beans built in', note:'Set before school drop-off', recipeKey:'tortilla-soup' },
+    { day:'Thu', emoji:'🍗', name:'Air Fryer Chicken Tenders + Sweet Potato Fries', veggie:'Corn', note:'Easy sous chef night for the kids', recipeKey:'chicken-tenders' },
+    { day:'Fri', emoji:'🍕', name:'Pizza Night', veggie:'Bell pepper topping option', note:'Kids: cheese | Adults: prosciutto, arugula, balsamic naan', recipeKey:'pizza-night' },
+    { day:'Sat', emoji:'🥩', name:'Grilled Flank Steak', veggie:'Corn + green beans', note:'Grill extra for Sunday fried rice!', recipeKey:'flank-steak' },
+    { day:'Sun', emoji:'🍳', name:'Fried Rice', veggie:'Edamame + peas & carrots in rice', note:'Use leftover flank steak', isLeftover:true, recipeKey:'fried-rice' },
+  ],
+  2: [
+    { day:'Mon', emoji:'🍝', name:'Spaghetti & Meatballs', veggie:'Steamed broccoli', note:'Everyone prefers meatballs — make a big batch & freeze some', recipeKey:'spaghetti-meatballs' },
+    { day:'Tue', emoji:'🌯', name:'Sheet Pan Chicken Fajitas', veggie:'Bell peppers built in', note:"11yo makes his burritos", recipeKey:'fajitas' },
+    { day:'Wed', emoji:'🍲', name:'Crockpot Beef Chili', veggie:'Corn & tomatoes built in', note:'Set before school drop-off', recipeKey:'beef-chili' },
+    { day:'Thu', emoji:'🥦', name:'Sheet Pan Beef & Broccoli', veggie:'Broccoli is the star', note:'Serve over rice', recipeKey:'beef-broccoli' },
+    { day:'Fri', emoji:'🍕', name:'Pizza Night', veggie:'Mushroom & pepper option', note:'Kids: cheese | Adults: chicken pesto, arugula, balsamic naan', recipeKey:'pizza-night' },
+    { day:'Sat', emoji:'🍗', name:'Grilled Chicken Thighs', veggie:'Corn + roasted brussels sprouts', note:'Grill extra for Sunday bowls', recipeKey:'grilled-chicken' },
+    { day:'Sun', emoji:'🌯', name:'Burrito Bowl Remix', veggie:'Corn built in', note:'Use leftover chili + rice + beans', isLeftover:true, recipeKey:'burrito-bowls' },
+  ],
+  3: [
+    { day:'Mon', emoji:'🫙', name:'Baked Ziti', veggie:'Green beans', note:'Prep Sunday, bake Monday', recipeKey:'baked-ziti' },
+    { day:'Tue', emoji:'🌯', name:'Burrito Bowl Bar', veggie:'Corn & peppers on the bar', note:"11yo makes his burritos", recipeKey:'burrito-bowls' },
+    { day:'Wed', emoji:'🍲', name:'Crockpot Beef Stew', veggie:'Carrots & celery built in', note:'Set before school drop-off', recipeKey:'beef-stew' },
+    { day:'Thu', emoji:'🫔', name:'Sheet Pan Chicken Fajitas + Rice', veggie:'Bell peppers built in', note:'Serve with cilantro lime rice', recipeKey:'fajitas' },
+    { day:'Fri', emoji:'🍕', name:'Pizza Night', veggie:'Arugula on adult pizzas', note:'Kids: cheese | Adults: steak, red onion, arugula, balsamic naan', recipeKey:'pizza-night' },
+    { day:'Sat', emoji:'🥩', name:'Grilled Flank Steak Tacos', veggie:'Corn + edamame on the side', note:'Slice thin, serve with all the toppings', recipeKey:'flank-steak' },
+    { day:'Sun', emoji:'🍳', name:'Fried Rice', veggie:'Edamame + peas & carrots in rice', note:'Use leftover flank steak', isLeftover:true, recipeKey:'fried-rice' },
+  ],
+  4: [
+    { day:'Mon', emoji:'🍝', name:'Pasta Primavera with Italian Sausage', veggie:'Veggies built into the dish', note:'Colorful and hearty', recipeKey:'pasta-primavera' },
+    { day:'Tue', emoji:'🌮', name:'Ground Beef Taco Bar', veggie:'Shredded lettuce & tomato', note:"11yo makes his burritos", recipeKey:'taco-bar' },
+    { day:'Wed', emoji:'🍗', name:'Crockpot Teriyaki Chicken', veggie:'Steamed broccoli or edamame', note:'Serve over rice', recipeKey:'teriyaki-chicken' },
+    { day:'Thu', emoji:'🍔', name:'Smash Burgers + Air Fryer Fries', veggie:'Corn or green beans', note:'Great sous chef night — older kids can help', recipeKey:'smash-burgers' },
+    { day:'Fri', emoji:'🍕', name:'Pizza Night', veggie:'Basil & arugula on adult pizzas', note:"Kids: cheese | Adults: margherita+ with prosciutto, basil, balsamic naan", recipeKey:'pizza-night' },
+    { day:'Sat', emoji:'🍗', name:'Grilled Chicken Thighs + Grilled Veggies', veggie:'Roasted brussels sprouts', note:'Grill extra chicken for Sunday', recipeKey:'grilled-chicken' },
+    { day:'Sun', emoji:'🍳', name:'Teriyaki Chicken Fried Rice', veggie:'Edamame + peas & carrots in rice', note:"Use Wednesday's leftover teriyaki chicken", isLeftover:true, recipeKey:'fried-rice' },
+  ]
+};
+
+const heroSubs = {
+  1: 'Marry Me Pasta · Taco Bar · Tortilla Soup · Chicken Tenders · Pizza · Flank Steak · Fried Rice',
+  2: 'Spaghetti & Meatballs · Fajitas · Beef Chili · Beef & Broccoli · Pizza · Grilled Chicken · Burrito Bowls',
+  3: 'Baked Ziti · Burrito Bar · Beef Stew · Fajitas · Pizza · Flank Steak Tacos · Fried Rice',
+  4: 'Pasta Primavera · Taco Bar · Teriyaki Chicken · Smash Burgers · Pizza · Grilled Chicken · Fried Rice'
+};
+
+// Shopping lists per week
+const shoppingData = {
+  costco: {
+    label: 'Costco', subtitle: 'Woodbury, MN · Stock up when low',
+    icon: '🏪',
+    weekly: {
+      1: { 'Proteins': ['Flank steak (thaw 2–3)', 'Ground beef (for tacos)', 'Chicken thighs', 'Eggs (2 dozen)'],
+           'Frozen': ['Frozen broccoli', 'Frozen peas & carrots mix', 'Frozen corn', 'Frozen edamame (shelled)'] },
+      2: { 'Proteins': ['Chicken thighs (large pack)', 'Ground beef (large pack)', 'Eggs (2 dozen)'],
+           'Frozen': ['Frozen broccoli', 'Frozen corn', 'Frozen edamame'] },
+      3: { 'Proteins': ['Flank steak (thaw 2–3)', 'Chicken thighs', 'Italian sausage', 'Eggs (2 dozen)'],
+           'Frozen': ['Frozen broccoli', 'Frozen peas & carrots', 'Frozen edamame'] },
+      4: { 'Proteins': ['Chicken thighs (large pack)', 'Ground beef (large pack)', 'Eggs (2 dozen)'],
+           'Frozen': ['Frozen broccoli', 'Frozen edamame', 'Frozen corn'] }
+    },
+    staples: {
+      'Pantry Staples': ['Olive oil (large)', 'Soy sauce (large)', 'Sesame oil', 'Balsamic glaze', 'Chicken broth (case)', 'Beef broth (case)', 'Jasmine rice (large bag)', 'Pasta variety pack', 'Canned crushed tomatoes (case)', 'Refried beans (case of cans)', 'Taco seasoning (bulk)', 'Panko breadcrumbs'],
+      'Cheese': ['Shredded mozzarella (large bag)', 'Parmesan block', 'Prosciutto']
+    }
+  },
+  aldi: {
+    label: 'Aldi', subtitle: 'Hudson, WI · Every Saturday',
+    icon: '🛒',
+    weekly: {
+      1: { 'Fresh Produce': ['Garlic', 'Green onions / scallions', 'Limes', 'Bell peppers', 'Corn on the cob', 'Green beans'],
+           'Dairy': ['Butter', 'Shredded cheese blend', 'Sour cream', 'Cream cheese', 'Heavy cream'],
+           'Bread & Carbs': ['Aldi naan (rectangular)', 'Small flour tortillas', 'Corn tortillas'],
+           'Pantry': ['Pizza sauce', 'Salsa', 'Tomato paste', 'Canned black beans'] },
+      2: { 'Fresh Produce': ['Garlic', 'Green onions', 'Bell peppers (fajitas)', 'Brussels sprouts', 'Corn on the cob'],
+           'Dairy': ['Butter', 'Shredded cheese', 'Sour cream'],
+           'Bread & Carbs': ['Aldi naan', 'Large flour tortillas', 'Burger buns (for W4 or if needed)'],
+           'Pantry': ['Pizza sauce', 'Salsa', 'Canned black beans'] },
+      3: { 'Fresh Produce': ['Garlic', 'Green onions', 'Bell peppers (fajitas)', 'Green beans', 'Edamame (fresh if available)', 'Corn on the cob'],
+           'Dairy': ['Butter', 'Shredded cheese', 'Sour cream', 'Ricotta or cottage cheese (baked ziti)'],
+           'Bread & Carbs': ['Aldi naan', 'Rigatoni or penne pasta', 'Large flour tortillas'],
+           'Pantry': ['Pizza sauce', 'Salsa', 'Jarred marinara'] },
+      4: { 'Fresh Produce': ['Garlic', 'Green onions', 'Zucchini (primavera)', 'Cherry tomatoes (primavera)', 'Green beans', 'Brussels sprouts'],
+           'Dairy': ['Butter', 'Shredded cheese', 'Sour cream'],
+           'Bread & Carbs': ['Aldi naan', 'Burger buns', 'Large flour tortillas'],
+           'Pantry': ['Pizza sauce', 'Salsa', 'Teriyaki sauce'] }
+    },
+    staples: {
+      'Always Keep Stocked': ['Ranch dressing', 'Shredded lettuce (tacos)', 'Limes', 'Rice (white or jasmine)']
+    }
+  },
+  festival: {
+    label: 'Festival Foods', subtitle: 'Hudson, WI · Gap fillers',
+    icon: '🧺',
+    weekly: {
+      1: { 'Fresh & Specialty': ['Fresh mozzarella balls', 'Arugula (if Aldi out)', 'Sun-dried tomatoes (Marry Me Pasta)', 'Fresh basil'] },
+      2: { 'Fresh & Specialty': ['Fresh mozzarella balls', 'Arugula', 'Pesto (jarred)', 'Stew beef chunks (if not at Costco)'] },
+      3: { 'Fresh & Specialty': ['Fresh mozzarella balls', 'Arugula', 'Fresh basil', 'Celery (beef stew)', 'Carrots (beef stew)'] },
+      4: { 'Fresh & Specialty': ['Fresh mozzarella balls', 'Arugula', 'Fresh basil (margherita pizza)', 'Oyster sauce (fried rice)'] }
+    },
+    staples: {
+      'Pantry Gap Fillers': ['Oyster sauce', 'Pesto (jarred)', 'Specialty pasta shapes']
+    }
+  }
+};
+
+// Recipes
+const recipes = [
+  {
+    key: 'marry-me-pasta', emoji: '🍝', name: 'Marry Me Pasta with Chicken',
+    category: 'Pasta', categoryColor: '#C4622D', time: '30 min', tool: 'Stovetop', isHit: true,
+    desc: 'Creamy sun-dried tomato sauce with chicken in a rich, savory sauce. All kids approved — the name says it all.',
+    ingredients: ['1.5 lbs chicken breasts or thighs, sliced', '12 oz penne or rigatoni', '½ cup sun-dried tomatoes, chopped', '1 cup heavy cream', '4 oz cream cheese', '1 cup chicken broth', '4 cloves garlic, minced', '1 tsp Italian seasoning', '½ tsp red pepper flakes (optional)', 'Salt, pepper, olive oil', 'Parmesan to finish'],
+    steps: ['Cook pasta to al dente, reserve 1 cup pasta water.', 'Season and sear chicken in olive oil until golden. Set aside.', 'In same pan, sauté garlic 1 min. Add sun-dried tomatoes.', 'Add cream, cream cheese, and broth. Stir until smooth and creamy.', 'Return chicken to pan. Simmer 5 min.', 'Toss in pasta. Loosen with pasta water if needed.', 'Top with parmesan and serve immediately.'],
+    kids: '⭐ House favorite — every kid eats this one!',
+    veggie: 'Steamed broccoli on the side'
+  },
+  {
+    key: 'spaghetti-meatballs', emoji: '🍝', name: 'Spaghetti & Meatballs',
+    category: 'Pasta', categoryColor: '#C4622D', time: '35 min', tool: 'Stovetop/Oven',
+    desc: 'Classic homemade meatballs the whole family agrees on. Make a double batch and freeze half.',
+    ingredients: ['1.5 lbs ground beef', '½ cup panko breadcrumbs', '1 egg', '3 cloves garlic, minced', '¼ cup parmesan', '1 tsp Italian seasoning', '1 lb spaghetti', '1 jar marinara or homemade sauce', 'Salt, pepper, olive oil'],
+    steps: ['Mix beef, breadcrumbs, egg, garlic, parmesan, seasoning. Roll into balls.', 'Bake at 400°F for 18–20 min OR sear in pan then simmer in sauce.', 'Cook spaghetti to al dente.', 'Heat sauce, add meatballs, simmer 10 min.', 'Serve over spaghetti with extra parmesan.'],
+    kids: '🧒 Everyone prefers meatballs to meat sauce — unanimous!',
+    veggie: 'Steamed broccoli on the side'
+  },
+  {
+    key: 'baked-ziti', emoji: '🫙', name: 'Baked Ziti',
+    category: 'Pasta', categoryColor: '#C4622D', time: '45 min (prep Sun)', tool: 'Oven',
+    desc: 'Prep Sunday evening, refrigerate, bake Monday. Walk-away weeknight dinner.',
+    ingredients: ['1 lb ziti or penne', '1 lb ground beef or sausage', '24 oz marinara', '15 oz ricotta or cottage cheese', '2 cups shredded mozzarella', '½ cup parmesan', '2 cloves garlic', 'Italian seasoning, salt, pepper'],
+    steps: ['Cook pasta to slightly under al dente.', 'Brown meat with garlic. Drain fat. Mix in marinara.', 'Layer in baking dish: sauce, pasta, ricotta, mozzarella. Repeat.', 'Top with parmesan. Cover with foil. Refrigerate overnight.', 'Bake covered at 375°F for 30 min, uncover 15 min until bubbly.'],
+    kids: '🧒 Cheesy pasta — hard to go wrong here.',
+    veggie: 'Green beans on the side'
+  },
+  {
+    key: 'pasta-primavera', emoji: '🍝', name: 'Pasta Primavera with Italian Sausage',
+    category: 'Pasta', categoryColor: '#C4622D', time: '30 min', tool: 'Stovetop',
+    desc: 'Colorful vegetables and Italian sausage in a light olive oil or cream sauce.',
+    ingredients: ['1 lb penne', '1 lb Italian sausage, sliced', '1 zucchini, diced', '1 cup cherry tomatoes', '1 bell pepper, sliced', '3 cloves garlic', '½ cup pasta water', 'Olive oil, parmesan, basil', 'Red pepper flakes'],
+    steps: ['Cook pasta, reserve 1 cup water.', 'Brown sausage in large pan. Set aside.', 'Sauté garlic and vegetables until tender-crisp.', 'Return sausage. Toss in pasta + pasta water. Coat everything.', 'Finish with parmesan, basil, and a drizzle of olive oil.'],
+    kids: '🥦 Veggies built right into the dish.',
+    veggie: 'Veggies are the dish!'
+  },
+  {
+    key: 'taco-bar', emoji: '🌮', name: 'Taco Bar',
+    category: 'Taco Night', categoryColor: '#3A6B4A', time: '20 min', tool: 'Stovetop', isHit: true,
+    desc: 'Build-your-own taco bar. 11yo makes his own refried bean & cheese burritos. Everyone wins.',
+    ingredients: ['1.5 lbs ground beef', '1 packet taco seasoning + ¼ cup water', 'Corn or flour tortillas', 'Shredded cheese blend', 'Sour cream', 'Salsa', 'Shredded lettuce', 'Diced tomato', 'Limes', 'For 11yo: refried beans + large flour tortilla + cheese'],
+    steps: ['Brown ground beef, drain fat.', 'Add taco seasoning and water. Simmer 3–5 min.', 'Warm tortillas in microwave or dry pan.', 'Set out all toppings buffet-style.', 'Let everyone build their own. 11yo makes his burrito independently.'],
+    kids: '🧒 Build-your-own = everyone happy. 11yo\'s burrito is his specialty!',
+    veggie: 'Corn, lettuce, tomato all on the taco bar'
+  },
+  {
+    key: 'fajitas', emoji: '🫔', name: 'Sheet Pan Chicken Fajitas',
+    category: 'Taco Night', categoryColor: '#3A6B4A', time: '30 min', tool: 'Sheet Pan',
+    desc: 'One pan, colorful peppers, juicy chicken. Serve with rice and let everyone build their own.',
+    ingredients: ['1.5 lbs chicken thighs or breasts, sliced', '3 bell peppers (mixed colors), sliced', '1 onion, sliced', '2 tbsp olive oil', '2 tsp cumin', '1 tsp chili powder', '1 tsp garlic powder', 'Salt, pepper', 'Flour tortillas', 'Sour cream, salsa, cheese'],
+    steps: ['Preheat oven to 425°F.', 'Toss chicken, peppers, onion with olive oil and spices.', 'Spread on sheet pan — single layer.', 'Roast 20–25 min until chicken cooked and edges slightly charred.', 'Serve straight from the pan with warm tortillas and toppings.'],
+    kids: '🧒 11yo makes his burritos. Others build fajitas from the pan.',
+    veggie: 'Bell peppers are built right in'
+  },
+  {
+    key: 'burrito-bowls', emoji: '🌯', name: 'Burrito Bowl Bar',
+    category: 'Taco Night', categoryColor: '#3A6B4A', time: '25 min', tool: 'Stovetop',
+    desc: 'Rice base with your choice of toppings. Great leftover remix night too.',
+    ingredients: ['2 cups rice, cooked', 'Seasoned chicken or leftover protein', '1 can black beans, heated', '1 can corn', 'Salsa', 'Sour cream', 'Shredded cheese', 'Shredded lettuce', 'Lime juice', 'Cilantro (optional)'],
+    steps: ['Cook rice (or use leftover rice).', 'Warm protein and beans separately.', 'Set out all toppings buffet-style.', 'Each person builds their bowl — rice base + chosen toppings.', 'Squeeze lime over everything.'],
+    kids: '🧒 Same buffet concept as taco bar — everyone controls their bowl.',
+    veggie: 'Corn and lettuce built into the bar'
+  },
+  {
+    key: 'tortilla-soup', emoji: '🍲', name: 'Crockpot Chicken Tortilla Soup',
+    category: 'Crockpot', categoryColor: '#8B6914', time: 'Set & forget', tool: 'Crockpot',
+    desc: 'Load it before school drop-off. Come home to dinner done. Kids love the toppings.',
+    ingredients: ['2 lbs chicken thighs (frozen is fine)', '1 can black beans, drained', '1 can corn, drained', '1 can crushed tomatoes (28 oz)', '1 can diced tomatoes with green chiles', '2 cups chicken broth', '1 packet taco seasoning', '1 tsp cumin', 'Toppings: shredded cheese, sour cream, tortilla chips, lime'],
+    steps: ['Add everything except toppings to the crockpot.', 'Cook on LOW 6–8 hours or HIGH 3–4 hours.', 'Shred chicken with two forks right in the pot.', 'Stir and adjust seasoning.', 'Serve in bowls with cheese, sour cream, chips, and lime.'],
+    kids: '🧒 The toppings station makes this a hit. Corn and beans are the hidden veggies.',
+    veggie: 'Corn & beans built in'
+  },
+  {
+    key: 'beef-chili', emoji: '🍲', name: 'Crockpot Beef Chili',
+    category: 'Crockpot', categoryColor: '#8B6914', time: 'Set & forget', tool: 'Crockpot',
+    desc: 'Hearty beef chili that doubles as Sunday burrito bowl filling. Freezes beautifully.',
+    ingredients: ['2 lbs ground beef, browned', '1 can kidney beans', '1 can black beans', '1 can crushed tomatoes', '1 can diced tomatoes', '1 cup beef broth', '2 tbsp chili powder', '1 tsp cumin', '1 tsp garlic powder', 'Salt, pepper'],
+    steps: ['Brown ground beef in a pan. Drain fat.', 'Add everything to crockpot.', 'Cook on LOW 6–8 hours or HIGH 3–4 hours.', 'Stir and taste for seasoning.', 'Serve with shredded cheese, sour cream, and cornbread if desired.'],
+    kids: '🧒 Mild enough for the kids. Serve with cheese on top.',
+    veggie: 'Tomatoes & beans built in'
+  },
+  {
+    key: 'beef-stew', emoji: '🍲', name: 'Crockpot Beef Stew',
+    category: 'Crockpot', categoryColor: '#8B6914', time: 'Set & forget', tool: 'Crockpot',
+    desc: 'Classic comfort stew with soft vegetables. Serve with crusty bread.',
+    ingredients: ['2 lbs beef stew chunks', '4 carrots, chopped', '4 celery stalks, chopped', '3 potatoes, cubed', '1 onion, diced', '3 cloves garlic', '2 cups beef broth', '1 can diced tomatoes', '2 tbsp Worcestershire sauce', '1 tsp thyme, salt, pepper'],
+    steps: ['Place everything in the crockpot.', 'Cook on LOW 8 hours or HIGH 4–5 hours.', 'Beef should be fork-tender.', 'Taste and adjust seasoning.', 'Serve in bowls with crusty bread.'],
+    kids: '🧒 Soft carrots and potatoes — even young kids can handle this.',
+    veggie: 'Carrots & celery built in'
+  },
+  {
+    key: 'teriyaki-chicken', emoji: '🍗', name: 'Crockpot Teriyaki Chicken',
+    category: 'Crockpot', categoryColor: '#8B6914', time: 'Set & forget', tool: 'Crockpot',
+    desc: 'Sweet and savory teriyaki. Make extra — leftover chicken makes Sunday fried rice next-level.',
+    ingredients: ['2 lbs chicken thighs', '½ cup teriyaki sauce', '¼ cup soy sauce', '3 tbsp brown sugar or honey', '3 cloves garlic, minced', '1 tsp sesame oil', '1 tsp ginger (optional)', 'Rice and steamed broccoli to serve'],
+    steps: ['Place chicken in crockpot.', 'Mix teriyaki sauce, soy sauce, sugar, garlic, sesame oil. Pour over chicken.', 'Cook on LOW 5–6 hours or HIGH 3 hours.', 'Shred or slice chicken.', 'Serve over rice with steamed broccoli or edamame.'],
+    kids: '🧒 Sweet teriyaki flavor — broadly popular with kids.',
+    veggie: 'Steamed broccoli or edamame on the side'
+  },
+  {
+    key: 'chicken-tenders', emoji: '🍗', name: 'Air Fryer Chicken Tenders + Sweet Potato Fries',
+    category: 'Air Fryer', categoryColor: '#4A5568', time: '25 min', tool: 'Air Fryer', isHit: true,
+    desc: 'Crispy tenders without the frying. Sweet potato fries are sneaky nutritious.',
+    ingredients: ['1.5 lbs chicken tenders', '1 cup panko breadcrumbs', '½ cup parmesan', '1 tsp garlic powder', '1 tsp paprika', '2 eggs, beaten', '2 large sweet potatoes, cut into fries', 'Olive oil, salt, pepper'],
+    steps: ['Cut sweet potatoes into fries. Toss with oil and salt.', 'Air fry sweet potato fries at 400°F for 18–20 min, shaking halfway.', 'Mix panko, parmesan, garlic powder, paprika.', 'Dip tenders in egg then panko mix.', 'Air fry tenders at 400°F for 12–14 min, flipping once.', 'Serve with ranch or honey mustard.'],
+    kids: '🧒 Air fryer tenders are a crowd pleaser every time.',
+    veggie: 'Corn on the side; sweet potato fries count too!'
+  },
+  {
+    key: 'beef-broccoli', emoji: '🥦', name: 'Sheet Pan Beef & Broccoli',
+    category: 'Sheet Pan', categoryColor: '#4A5568', time: '30 min', tool: 'Sheet Pan',
+    desc: 'Better than takeout. Broccoli gets beautifully roasted edges. Serve over rice.',
+    ingredients: ['1.5 lbs flank steak or sirloin, thinly sliced', '4 cups broccoli florets', '3 tbsp soy sauce', '2 tbsp oyster sauce', '1 tbsp sesame oil', '1 tbsp brown sugar', '3 cloves garlic, minced', '1 tsp ginger', 'Rice to serve'],
+    steps: ['Whisk together soy sauce, oyster sauce, sesame oil, brown sugar, garlic, ginger.', 'Toss beef and broccoli with half the sauce.', 'Spread on sheet pan — separate beef and broccoli slightly.', 'Roast at 425°F for 15–18 min.', 'Drizzle remaining sauce over. Serve over rice.'],
+    kids: '🧒 3 of 4 kids eat broccoli, and crispy roasted wins over steamed.',
+    veggie: 'Broccoli is the star'
+  },
+  {
+    key: 'smash-burgers', emoji: '🍔', name: 'Smash Burgers + Air Fryer Fries',
+    category: 'American', categoryColor: '#4A5568', time: '25 min', tool: 'Stovetop + Air Fryer',
+    desc: 'Crispy-edged smash burgers on the stovetop. Great sous chef night for the older kids.',
+    ingredients: ['2 lbs ground beef (80/20)', 'Burger buns', 'American or cheddar cheese', 'Lettuce, tomato, onion, pickles', 'Ketchup, mustard, mayo', '4 large russet potatoes for fries', 'Oil, salt, garlic powder for fries'],
+    steps: ['Cut potatoes into fries. Soak in water 10 min, pat dry.', 'Air fry fries at 380°F for 20 min, shaking twice.', 'Divide beef into 3 oz balls. Do NOT season yet.', 'Heat cast iron skillet very hot. Place balls, smash down hard with spatula.', 'Season with salt and pepper. Cook 2 min. Flip, add cheese, cook 1 min.', 'Serve immediately on toasted buns with toppings.'],
+    kids: '🧒 Universal kid favorite. Great night for the sous chef to help with toppings.',
+    veggie: 'Corn or green beans on the side'
+  },
+  {
+    key: 'flank-steak', emoji: '🥩', name: 'Grilled Flank Steak',
+    category: 'Grill Night', categoryColor: '#3A6B4A', time: '20 min + marinate', tool: 'Grill',
+    desc: 'Your bulk protein hero. Grill extra — it becomes Sunday fried rice or taco filling.',
+    ingredients: ['2–3 lbs flank steak', '¼ cup soy sauce', '3 tbsp olive oil', '2 tbsp Worcestershire', '3 cloves garlic, minced', '1 tsp cumin', '1 tsp chili powder (optional)', 'Salt and pepper', 'Corn on the cob and green beans to serve'],
+    steps: ['Mix marinade. Pour over steak in a zip bag. Marinate 2–8 hours.', 'Bring steak to room temp 30 min before grilling.', 'Grill on high heat 4–5 min per side for medium-rare.', 'REST 10 minutes — critical step.', 'Slice AGAINST the grain into thin strips.', 'Save at least ⅓ of the steak for Sunday fried rice.'],
+    kids: '🥩 Most kids will eat steak when sliced thin. Serve with corn they love.',
+    veggie: 'Corn + green beans on the side'
+  },
+  {
+    key: 'grilled-chicken', emoji: '🍗', name: 'Grilled Chicken Thighs',
+    category: 'Grill Night', categoryColor: '#3A6B4A', time: '30 min', tool: 'Grill',
+    desc: 'Juicy, forgiving, flavorful. Thighs are harder to overcook than breasts. Grill extra!',
+    ingredients: ['2–3 lbs bone-in or boneless chicken thighs', '3 tbsp olive oil', '1 tbsp garlic powder', '1 tsp smoked paprika', '1 tsp onion powder', 'Salt and pepper', 'Corn on the cob and vegetables to serve'],
+    steps: ['Mix olive oil and spices. Coat chicken well.', 'Let marinate at least 30 min (or overnight).', 'Grill over medium heat 6–7 min per side until 165°F internal.', 'Let rest 5 min before serving.', 'Grill extra for Monday pasta protein or Tuesday tacos.'],
+    kids: '🧒 Classic chicken — all kids eat this.',
+    veggie: 'Corn + roasted brussels sprouts or grilled zucchini'
+  },
+  {
+    key: 'fried-rice', emoji: '🍳', name: 'Fried Rice (Leftover Remix)',
+    category: 'Leftover Remix', categoryColor: '#5A8F6A', time: '15 min', tool: 'Stovetop', isHit: true,
+    desc: '3 of 4 kids love this. Use leftover Saturday protein and day-old rice for best results.',
+    ingredients: ['3 cups day-old cooked rice (leftover from week)', '1–1.5 cups leftover protein (flank steak or chicken), chopped', '3 eggs', '1 cup frozen peas & carrots mix', '½ cup frozen corn', '½ cup shelled edamame', '3 cloves garlic', '3 tbsp soy sauce', '1 tbsp sesame oil', '1 tbsp oyster sauce (optional)', '2 green onions, sliced', 'Vegetable oil for cooking'],
+    steps: ['Scramble eggs in a hot wok or large pan. Set aside.', 'Add oil, then garlic. Stir 30 seconds.', 'Add frozen vegetables. Stir fry 2 min.', 'Add rice. Press into pan, let sit 1–2 min to crisp.', 'Add protein. Toss everything together.', 'Add soy sauce, sesame oil, oyster sauce. Toss well.', 'Return eggs, toss again. Top with green onions.'],
+    kids: '🧒 3 of 4 kids love fried rice — one of the best acceptance rates in the rotation.',
+    veggie: 'Edamame, peas & carrots all mixed in'
+  },
+  {
+    key: 'pizza-night', emoji: '🍕', name: 'Pizza Night',
+    category: 'Pizza Friday', categoryColor: '#C4622D', time: '20 min', tool: 'Oven', isHit: true,
+    desc: 'Kids build cheese pizzas. Adults make elevated naan pizzas. Everyone wins Friday.',
+    ingredients: ['For kids: Aldi flatbreads or pizza dough, pizza sauce, shredded mozzarella, toppings of choice', 'For adults: Aldi rectangular naan, fresh mozzarella, arugula, balsamic glaze', 'Adult option A: prosciutto + mozzarella + arugula + balsamic', 'Adult option B: grilled chicken + pesto + mozzarella + arugula + balsamic', 'Adult option C: thin-sliced steak + mozzarella + red onion + arugula + balsamic', 'Adult option D: tomato + fresh mozzarella + basil + prosciutto + arugula + balsamic'],
+    steps: ['Preheat oven to 425°F.', 'Kids: spread sauce, add cheese and toppings. Bake 10–12 min.', 'Adults: lay out naan, add toppings (skip balsamic until after baking).', 'Bake adult naan pizzas 10–12 min until cheese bubbles.', 'Remove adult pizzas, top with arugula and drizzle balsamic glaze.', 'Let kids help build their own — the 9 and 11 yo can run this night.'],
+    kids: '🧒 Kids build their own = they eat it happily. The older two can run the whole operation.',
+    veggie: 'Arugula on adult pizzas; bell pepper option for kids\' pizzas'
+  }
+];
+
+// ═══════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════
+let currentWeek = 1;
+let currentShoppingWeek = 1;
+let checkedItems = {};
+
+// ═══════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  event.currentTarget.classList.add('active');
+}
+
+// ═══════════════════════════════════════
+// WEEKLY CALENDAR
+// ═══════════════════════════════════════
+function setWeek(n, btn) {
+  currentWeek = n;
+  document.querySelectorAll('.week-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('hero-title').textContent = 'Week ' + n;
+  document.getElementById('hero-sub').textContent = heroSubs[n];
+  renderCalendar();
+}
+
+function renderCalendar() {
+  const grid = document.getElementById('calendar-grid');
+  const days = weekData[currentWeek];
+  grid.innerHTML = days.map(d => `
+    <div class="day-card" onclick="openRecipeModal('${d.recipeKey}')">
+      <div class="day-header">
+        <div class="day-name">${d.day}</div>
+        <div class="theme-label">${themes[d.day]}</div>
+      </div>
+      <div class="day-body">
+        <span class="meal-emoji">${d.emoji}</span>
+        ${d.isLeftover ? '<span class="leftover-badge">♻️ Leftover Remix</span>' : ''}
+        <div class="meal-name">${d.name}</div>
+        <span class="meal-veggie">🥦 ${d.veggie}</span>
+        <div class="meal-note">${d.note}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════════════
+// 4-WEEK ROTATION
+// ═══════════════════════════════════════
+function renderRotation() {
+  const grid = document.getElementById('rotation-grid');
+  const colors = ['#C4622D','#3A6B4A','#8B6914','#4A5568'];
+  grid.innerHTML = [1,2,3,4].map((wk,i) => `
+    <div class="rotation-week">
+      <div class="rotation-week-header" style="background:${colors[i]}">
+        📅 Week ${wk}
+      </div>
+      ${weekData[wk].map(d => `
+        <div class="rotation-meal-row">
+          <span class="rotation-day-label">${d.day}</span>
+          <span class="rotation-emoji">${d.emoji}</span>
+          <span class="rotation-meal-name">${d.name}</span>
+        </div>
+      `).join('')}
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════════════
+// SHOPPING LISTS
+// ═══════════════════════════════════════
+function setShoppingWeek(n, btn) {
+  currentShoppingWeek = n;
+  document.querySelectorAll('.week-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  updatePrintHeader(n);
+  renderShopping();
+}
+
+function updatePrintHeader(n) {
+  const numEl = document.getElementById('print-week-num');
+  const chips = document.getElementById('print-meal-chips');
+  if (numEl) numEl.textContent = n;
+  if (chips) {
+    chips.innerHTML = weekData[n].map(d =>
+      '<span class="print-meal-chip">' + d.emoji + ' ' + d.day + ': ' + d.name + '</span>'
+    ).join('');
+  }
+}
+
+function printList() {
+  updatePrintHeader(currentShoppingWeek);
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-shopping').classList.add('active');
+  setTimeout(() => window.print(), 150);
+}
+
+function renderShopping() {
+  const layout = document.getElementById('shopping-layout');
+  const stores = ['costco','aldi','festival'];
+
+  layout.innerHTML = stores.map(storeKey => {
+    const store = shoppingData[storeKey];
+    const weekItems = store.weekly[currentShoppingWeek] || {};
+    const allCategories = { ...weekItems, ...store.staples };
+
+    return `
+      <div class="store-card">
+        <div class="store-header">
+          <span class="store-icon">${store.icon}</span>
+          <div>
+            <div class="store-name">${store.label}</div>
+            <div class="store-subtitle">${store.subtitle}</div>
+          </div>
+        </div>
+        <div class="store-body">
+          ${Object.entries(allCategories).map(([cat, items]) => `
+            <div class="shopping-category">
+              <h4>${cat}</h4>
+              ${items.map((item, idx) => {
+                const id = `${storeKey}-${currentShoppingWeek}-${cat}-${idx}`;
+                const checked = checkedItems[id] || false;
+                return `
+                  <div class="shopping-item ${checked ? 'checked' : ''}" id="item-${id}">
+                    <input type="checkbox" id="cb-${id}" ${checked ? 'checked' : ''}
+                      onchange="toggleItem('${id}')">
+                    <label for="cb-${id}">${item}</label>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          `).join('')}
+          <button class="clear-btn" onclick="clearStore('${storeKey}')">↺ Clear checks</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function toggleItem(id) {
+  checkedItems[id] = !checkedItems[id];
+  const el = document.getElementById('item-' + id);
+  if (el) el.classList.toggle('checked', checkedItems[id]);
+}
+
+function clearStore(storeKey) {
+  Object.keys(checkedItems).forEach(k => {
+    if (k.startsWith(storeKey)) checkedItems[k] = false;
+  });
+  renderShopping();
+}
+
+// ═══════════════════════════════════════
+// RECIPE CARDS
+// ═══════════════════════════════════════
+const catColors = {
+  'Pasta': '#C4622D', 'Taco Night': '#3A6B4A', 'Crockpot': '#8B6914',
+  'Sheet Pan': '#4A5568', 'Air Fryer': '#4A5568', 'American': '#4A5568',
+  'Grill Night': '#3A6B4A', 'Leftover Remix': '#5A8F6A', 'Pizza Friday': '#C4622D'
+};
+
+const bgColors = {
+  'Pasta': '#FEF0E8', 'Taco Night': '#EBF2ED', 'Crockpot': '#FDF6E3',
+  'Sheet Pan': '#EEF0F3', 'Air Fryer': '#EEF0F3', 'American': '#EEF0F3',
+  'Grill Night': '#EBF2ED', 'Leftover Remix': '#E8F5E9', 'Pizza Friday': '#FEF0E8'
+};
+
+function renderRecipes() {
+  const grid = document.getElementById('recipe-grid');
+  grid.innerHTML = recipes.map(r => `
+    <div class="recipe-card" onclick="openRecipeModal('${r.key}')">
+      <div class="recipe-card-top" style="background:${bgColors[r.category] || '#F5F0E8'}">
+        <span style="font-size:3rem">${r.emoji}</span>
+        <span class="recipe-category-tag" style="background:${catColors[r.category] || '#888'}">${r.category}</span>
+      </div>
+      <div class="recipe-card-body">
+        <div class="recipe-card-name">${r.name}</div>
+        <div class="recipe-meta">
+          <span class="recipe-tag tag-time">⏱ ${r.time}</span>
+          <span class="recipe-tag tag-tool">🔧 ${r.tool}</span>
+          ${r.isHit ? '<span class="recipe-tag tag-hit">⭐ Family Fave</span>' : ''}
+        </div>
+        <div class="recipe-desc">${r.desc}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════════════
+// MODAL
+// ═══════════════════════════════════════
+function openRecipeModal(key) {
+  const r = recipes.find(x => x.key === key);
+  if (!r) return;
+  document.getElementById('modal-emoji').textContent = r.emoji;
+  document.getElementById('modal-title').textContent = r.name;
+  document.getElementById('modal-body').innerHTML = `
+    <div class="recipe-meta" style="margin-bottom:12px">
+      <span class="recipe-tag tag-time">⏱ ${r.time}</span>
+      <span class="recipe-tag tag-tool">🔧 ${r.tool}</span>
+      ${r.isHit ? '<span class="recipe-tag tag-hit">⭐ Family Fave</span>' : ''}
+    </div>
+    <div class="modal-section">
+      <h4>Ingredients</h4>
+      <ul class="ingredient-list">${r.ingredients.map(i => `<li>${i}</li>`).join('')}</ul>
+    </div>
+    <div class="modal-section">
+      <h4>Steps</h4>
+      <ol class="step-list">${r.steps.map((s,i) => `<li><span class="step-num">${i+1}</span><span>${s}</span></li>`).join('')}</ol>
+    </div>
+    <div class="modal-section">
+      <h4>Veggie Side</h4>
+      <p style="font-size:0.88rem;color:var(--green);font-weight:600">🥦 ${r.veggie}</p>
+    </div>
+    <div class="kids-badge">🧒 ${r.kids}</div>
+  `;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function closeModal(e) {
+  if (!e || e.target === document.getElementById('modal-overlay')) {
+    document.getElementById('modal-overlay').classList.remove('open');
+  }
+}
+
+// ═══════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════
+renderCalendar();
+renderRotation();
+renderShopping();
+renderRecipes();
+updatePrintHeader(1);
+</script>
+</body>
+</html>
