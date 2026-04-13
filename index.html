@@ -706,6 +706,64 @@
     margin-top: 6px;
   }
 
+  /* ─── COOK MODE ─── */
+  .cook-mode-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 10px 20px;
+    margin-bottom: 16px;
+    background: var(--cream);
+    border-radius: 12px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.2s;
+  }
+
+  .cook-mode-toggle.active {
+    background: #FDF6E3;
+    border: 1px solid var(--gold);
+  }
+
+  .cook-mode-label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--warm-gray);
+  }
+
+  .cook-mode-toggle.active .cook-mode-label {
+    color: var(--charcoal);
+  }
+
+  .cook-mode-switch {
+    width: 40px;
+    height: 22px;
+    background: var(--border);
+    border-radius: 11px;
+    position: relative;
+    transition: background 0.2s;
+  }
+
+  .cook-mode-switch::after {
+    content: '';
+    position: absolute;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: white;
+    top: 2px; left: 2px;
+    transition: transform 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+
+  .cook-mode-toggle.active .cook-mode-switch {
+    background: var(--gold);
+  }
+
+  .cook-mode-toggle.active .cook-mode-switch::after {
+    transform: translateX(18px);
+  }
+
   /* ─── PRINT BUTTON ─── */
   .print-bar {
     display: flex;
@@ -883,6 +941,238 @@
 
   .footer-strip strong { color: var(--gold-light); }
 
+  /* ─── TODAY (Daily View) ─── */
+  .today-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+
+  .today-arrow {
+    background: white;
+    border: 2px solid var(--border);
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    font-size: 1.6rem;
+    color: var(--charcoal);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .today-arrow:active { background: var(--green-pale); border-color: var(--green); }
+
+  .today-date-block { text-align: center; min-width: 180px; }
+
+  .today-day-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--charcoal);
+  }
+
+  .today-date {
+    font-size: 0.9rem;
+    color: var(--warm-gray);
+    margin-top: 2px;
+  }
+
+  .today-week-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--green);
+    margin-top: 6px;
+  }
+
+  .today-card {
+    background: white;
+    border-radius: 20px;
+    padding: 32px 28px;
+    text-align: center;
+    box-shadow: 0 4px 20px var(--shadow);
+    border: 2px solid var(--border);
+    margin-bottom: 20px;
+    max-width: 480px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .today-card.skipped {
+    opacity: 0.5;
+    filter: grayscale(0.6);
+  }
+
+  .today-theme {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--rust);
+    background: rgba(196,98,45,0.1);
+    display: inline-block;
+    padding: 4px 14px;
+    border-radius: 20px;
+    margin-bottom: 16px;
+  }
+
+  .today-emoji { font-size: 4rem; margin-bottom: 12px; }
+
+  .today-meal-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--charcoal);
+    margin-bottom: 12px;
+    line-height: 1.3;
+  }
+
+  .today-veggie {
+    font-size: 0.9rem;
+    color: var(--green);
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  .today-note {
+    font-size: 0.85rem;
+    color: var(--warm-gray);
+    font-style: italic;
+    margin-bottom: 16px;
+    line-height: 1.5;
+  }
+
+  .today-tags {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+
+  .today-recipe-btn {
+    background: var(--green);
+    color: white;
+    border: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 12px 28px;
+    border-radius: 24px;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 3px 10px rgba(58,107,74,0.25);
+  }
+
+  .today-recipe-btn:active { transform: scale(0.97); }
+
+  .today-prep {
+    background: #FDF6E3;
+    border: 2px solid var(--gold);
+    border-radius: 14px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    max-width: 480px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .today-prep-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--gold);
+    margin-bottom: 6px;
+  }
+
+  .today-prep-text {
+    font-size: 0.88rem;
+    color: var(--charcoal);
+    line-height: 1.5;
+  }
+
+  .today-skip-section {
+    text-align: center;
+    max-width: 480px;
+    margin: 0 auto 20px;
+  }
+
+  .today-skip-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--warm-gray);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 500;
+    padding: 10px 24px;
+    border-radius: 24px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .today-skip-btn:active { border-color: var(--rust-light); color: var(--rust); }
+
+  .today-skipped-banner {
+    background: rgba(231,76,60,0.08);
+    border: 2px solid rgba(231,76,60,0.25);
+    border-radius: 14px;
+    padding: 16px 20px;
+    max-width: 480px;
+    margin: 0 auto 20px;
+    text-align: center;
+  }
+
+  .skipped-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #E74C3C;
+    margin-bottom: 8px;
+  }
+
+  .skipped-reason {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    color: var(--charcoal);
+    margin-bottom: 10px;
+    outline: none;
+  }
+
+  .skipped-reason:focus { border-color: var(--rust-light); }
+
+  .today-unskip-btn {
+    background: none;
+    border: 1px solid rgba(231,76,60,0.3);
+    color: #E74C3C;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 500;
+    padding: 6px 18px;
+    border-radius: 20px;
+    cursor: pointer;
+  }
+
+  .carried-over-badge {
+    font-size: 0.7rem;
+    padding: 3px 10px;
+    border-radius: 10px;
+    font-weight: 600;
+    background: #E8F5E9;
+    color: var(--green);
+  }
+
   /* ─── HERO BANNER (weekly view) ─── */
   .week-hero {
     background: linear-gradient(135deg, var(--green) 0%, var(--rust-dark) 100%);
@@ -974,6 +1264,13 @@
     .hero-badges { gap: 6px; }
     .hero-badge { font-size: 0.7rem; padding: 4px 10px; }
 
+    /* Today view mobile tweaks */
+    .today-day-name { font-size: 1.5rem; }
+    .today-date-block { min-width: 140px; }
+    .today-emoji { font-size: 3rem; }
+    .today-meal-name { font-size: 1.3rem; }
+    .today-card { padding: 24px 20px; }
+
     /* Calendar: single column on mobile */
     .calendar-grid {
       grid-template-columns: 1fr !important;
@@ -1063,7 +1360,8 @@
     <h1>Haines <span>Harvest</span></h1>
   </div>
   <nav>
-    <button class="active" onclick="showView('weekly')">This Week</button>
+    <button class="active" onclick="showView('today')">Today</button>
+    <button onclick="showView('weekly')">This Week</button>
     <button onclick="showView('rotation')">4-Week Plan</button>
     <button onclick="showView('shopping')">Grocery Lists</button>
     <button onclick="showView('recipes')">Recipes</button>
@@ -1073,9 +1371,49 @@
 <main>
 
   <!-- ═══════════════════════════════════════
+       VIEW 0: TODAY (Daily View)
+  ═══════════════════════════════════════ -->
+  <div id="view-today" class="view active">
+    <div class="today-nav">
+      <button class="today-arrow" onclick="shiftDay(-1)" aria-label="Previous day">&#8249;</button>
+      <div class="today-date-block">
+        <div class="today-day-name" id="todayDayName"></div>
+        <div class="today-date" id="todayDate"></div>
+        <div class="today-week-label" id="todayWeekLabel"></div>
+      </div>
+      <button class="today-arrow" onclick="shiftDay(1)" aria-label="Next day">&#8250;</button>
+    </div>
+
+    <div class="today-card" id="todayCard">
+      <div class="today-theme" id="todayTheme"></div>
+      <div class="today-emoji" id="todayEmoji"></div>
+      <div class="today-meal-name" id="todayMealName"></div>
+      <div class="today-veggie" id="todayVeggie"></div>
+      <div class="today-note" id="todayNote"></div>
+      <div class="today-tags" id="todayTags"></div>
+      <button class="today-recipe-btn" id="todayRecipeBtn" onclick="openTodayRecipe()">View Full Recipe</button>
+    </div>
+
+    <div class="today-prep" id="todayPrep" style="display:none">
+      <div class="today-prep-label">Prep Ahead for Tomorrow</div>
+      <div class="today-prep-text" id="todayPrepText"></div>
+    </div>
+
+    <div class="today-skip-section" id="todaySkipSection">
+      <button class="today-skip-btn" id="todaySkipBtn" onclick="toggleSkip()">Skip This Meal</button>
+    </div>
+
+    <div class="today-skipped-banner" id="todaySkippedBanner" style="display:none">
+      <div class="skipped-label">Skipped</div>
+      <input class="skipped-reason" id="skippedReason" type="text" placeholder="Ate out, made something else..." oninput="saveSkipReason()">
+      <button class="today-unskip-btn" onclick="toggleSkip()">Undo Skip</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
        VIEW 1: WEEKLY CALENDAR
   ═══════════════════════════════════════ -->
-  <div id="view-weekly" class="view active">
+  <div id="view-weekly" class="view">
     <div class="page-header">
       <h2>Weekly Dinner Plan</h2>
       <p>Select a week to see the full dinner lineup with veggie sides.</p>
@@ -1171,6 +1509,10 @@
         <div class="modal-title" id="modal-title"></div>
       </div>
       <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="cook-mode-toggle" id="cookModeToggle" onclick="toggleCookMode()">
+      <span class="cook-mode-label" id="cookModeLabel">🍳 Cook Mode — keep screen on</span>
+      <div class="cook-mode-switch"></div>
     </div>
     <div class="modal-body" id="modal-body"></div>
   </div>
@@ -1473,11 +1815,14 @@ let checkedItems = {};
 // ═══════════════════════════════════════
 // NAVIGATION
 // ═══════════════════════════════════════
-function showView(name) {
+function showView(name, btnEl) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
   document.getElementById('view-' + name).classList.add('active');
-  event.currentTarget.classList.add('active');
+  // Find the clicked button by label if no element passed
+  if (btnEl) { btnEl.classList.add('active'); }
+  else if (event && event.currentTarget) { event.currentTarget.classList.add('active'); }
+  if (name === 'today') renderToday();
 }
 
 // ═══════════════════════════════════════
@@ -1688,17 +2033,258 @@ function openRecipeModal(key) {
 function closeModal(e) {
   if (!e || e.target === document.getElementById('modal-overlay')) {
     document.getElementById('modal-overlay').classList.remove('open');
+    // Release cook mode wake lock
+    if (wakeLock) {
+      wakeLock.release();
+      wakeLock = null;
+      document.getElementById('cookModeToggle').classList.remove('active');
+      document.getElementById('cookModeLabel').textContent = '🍳 Cook Mode — keep screen on';
+    }
+  }
+}
+
+// ═══════════════════════════════════════
+// COOK MODE (Wake Lock)
+// ═══════════════════════════════════════
+let wakeLock = null;
+
+async function toggleCookMode() {
+  const toggle = document.getElementById('cookModeToggle');
+  const label = document.getElementById('cookModeLabel');
+
+  if (wakeLock) {
+    await wakeLock.release();
+    wakeLock = null;
+    toggle.classList.remove('active');
+    label.textContent = '🍳 Cook Mode — keep screen on';
+  } else {
+    try {
+      wakeLock = await navigator.wakeLock.request('screen');
+      toggle.classList.add('active');
+      label.textContent = '🍳 Cook Mode ON — screen stays awake';
+      wakeLock.addEventListener('release', () => {
+        wakeLock = null;
+        toggle.classList.remove('active');
+        label.textContent = '🍳 Cook Mode — keep screen on';
+      });
+    } catch {
+      label.textContent = '🍳 Cook Mode not supported on this device';
+    }
+  }
+}
+
+// ═══════════════════════════════════════
+// TODAY (Daily View)
+// ═══════════════════════════════════════
+
+// Anchor: Week 1, Monday = April 27, 2026
+const ANCHOR_DATE = new Date(2026, 3, 27); // months are 0-indexed
+const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const DAY_ABBREVS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+// Day offset from today (0 = today, 1 = tomorrow, -1 = yesterday)
+let dayOffset = 0;
+let currentTodayRecipeKey = '';
+
+// Skip data stored in localStorage: { "2026-04-28": { skipped: true, reason: "ate out" } }
+function getSkipData() {
+  try { return JSON.parse(localStorage.getItem('hh_skips') || '{}'); } catch { return {}; }
+}
+function saveSkipData(data) {
+  localStorage.setItem('hh_skips', JSON.stringify(data));
+}
+
+function getDateKey(date) {
+  return date.getFullYear() + '-' + String(date.getMonth()+1).padStart(2,'0') + '-' + String(date.getDate()).padStart(2,'0');
+}
+
+// Given a date, figure out which rotation week (1-4) and day index (0-6, Mon=0)
+function getRotationInfo(date) {
+  const diffMs = date.getTime() - ANCHOR_DATE.getTime();
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  // If before anchor, return null
+  if (diffDays < 0) return null;
+
+  // Week cycle: 28 days (4 weeks of 7 days)
+  const dayInCycle = ((diffDays % 28) + 28) % 28;
+  const rotationWeek = Math.floor(dayInCycle / 7) + 1; // 1-4
+  const dayInWeek = dayInCycle % 7; // 0=Mon, 1=Tue, ... 6=Sun
+
+  return { rotationWeek, dayInWeek };
+}
+
+// Check if a recipe was skipped and is being carried over
+function getCarriedOver(date, recipeKey) {
+  const skips = getSkipData();
+  // Look back through previous cycles to see if this recipe was skipped last time
+  const info = getRotationInfo(date);
+  if (!info) return false;
+
+  // Check 28 days ago (last cycle of this same meal)
+  const prevDate = new Date(date.getTime() - 28 * 86400000);
+  const prevKey = getDateKey(prevDate);
+  if (skips[prevKey] && skips[prevKey].skipped) {
+    // Check if it was the same recipe
+    const prevInfo = getRotationInfo(prevDate);
+    if (prevInfo) {
+      const prevMeal = weekData[prevInfo.rotationWeek][prevInfo.dayInWeek];
+      if (prevMeal && prevMeal.recipeKey === recipeKey) return true;
+    }
+  }
+  return false;
+}
+
+// Prep-ahead detection: check tomorrow's note for prep keywords
+function getPrepReminder(date) {
+  const tomorrow = new Date(date.getTime() + 86400000);
+  const info = getRotationInfo(tomorrow);
+  if (!info) return null;
+  const meal = weekData[info.rotationWeek]?.[info.dayInWeek];
+  if (!meal) return null;
+
+  const prepKeywords = ['prep', 'thaw', 'marinate', 'set before', 'crockpot', 'overnight', 'soak'];
+  const noteLower = meal.note.toLowerCase();
+  if (prepKeywords.some(kw => noteLower.includes(kw))) {
+    return { meal: meal.name, note: meal.note };
+  }
+  return null;
+}
+
+function renderToday() {
+  const now = new Date();
+  const viewDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + dayOffset);
+  const info = getRotationInfo(viewDate);
+  const dateKey = getDateKey(viewDate);
+  const skips = getSkipData();
+  const isSkipped = skips[dateKey]?.skipped || false;
+
+  // Date display
+  document.getElementById('todayDayName').textContent = DAY_NAMES[viewDate.getDay()];
+  document.getElementById('todayDate').textContent = MONTH_NAMES[viewDate.getMonth()] + ' ' + viewDate.getDate() + ', ' + viewDate.getFullYear();
+
+  const card = document.getElementById('todayCard');
+  const skipSection = document.getElementById('todaySkipSection');
+  const skippedBanner = document.getElementById('todaySkippedBanner');
+  const prepEl = document.getElementById('todayPrep');
+
+  if (!info) {
+    // Before rotation starts
+    document.getElementById('todayWeekLabel').textContent = 'Rotation starts April 27';
+    document.getElementById('todayTheme').textContent = '';
+    document.getElementById('todayEmoji').textContent = '📅';
+    document.getElementById('todayMealName').textContent = 'Not started yet';
+    document.getElementById('todayVeggie').textContent = '';
+    document.getElementById('todayNote').textContent = 'The meal rotation begins Monday, April 27, 2026.';
+    document.getElementById('todayTags').innerHTML = '';
+    document.getElementById('todayRecipeBtn').style.display = 'none';
+    card.classList.remove('skipped');
+    skipSection.style.display = 'none';
+    skippedBanner.style.display = 'none';
+    prepEl.style.display = 'none';
+    currentTodayRecipeKey = '';
+    return;
+  }
+
+  const meal = weekData[info.rotationWeek][info.dayInWeek];
+  const dayAbbrev = DAY_ABBREVS[viewDate.getDay()];
+  currentTodayRecipeKey = meal.recipeKey;
+
+  document.getElementById('todayWeekLabel').textContent = 'Week ' + info.rotationWeek + ' of 4';
+  document.getElementById('todayTheme').textContent = themes[dayAbbrev] || '';
+  document.getElementById('todayEmoji').textContent = meal.emoji;
+  document.getElementById('todayMealName').textContent = meal.name;
+  document.getElementById('todayVeggie').textContent = '🥦 ' + meal.veggie;
+  document.getElementById('todayNote').textContent = meal.note;
+  document.getElementById('todayRecipeBtn').style.display = '';
+
+  // Tags
+  let tagsHtml = '';
+  if (meal.isHit) tagsHtml += '<span class="recipe-tag tag-hit">⭐ Family Fave</span>';
+  if (meal.isLeftover) tagsHtml += '<span class="recipe-tag tag-tool">♻️ Leftover Remix</span>';
+  if (getCarriedOver(viewDate, meal.recipeKey)) {
+    tagsHtml += '<span class="carried-over-badge">🔁 Carried over — ingredients on hand</span>';
+  }
+  const recipe = recipes.find(r => r.key === meal.recipeKey);
+  if (recipe) tagsHtml += '<span class="recipe-tag tag-time">⏱ ' + recipe.time + '</span>';
+  document.getElementById('todayTags').innerHTML = tagsHtml;
+
+  // Skip state
+  card.classList.toggle('skipped', isSkipped);
+  skipSection.style.display = isSkipped ? 'none' : 'block';
+  skippedBanner.style.display = isSkipped ? 'block' : 'none';
+  if (isSkipped) {
+    document.getElementById('skippedReason').value = skips[dateKey]?.reason || '';
+  }
+
+  // Prep reminder
+  const prep = getPrepReminder(viewDate);
+  if (prep && !isSkipped) {
+    prepEl.style.display = 'block';
+    document.getElementById('todayPrepText').textContent = 'Tomorrow: ' + prep.meal + ' — ' + prep.note;
+  } else {
+    prepEl.style.display = 'none';
+  }
+}
+
+function shiftDay(dir) {
+  dayOffset += dir;
+  renderToday();
+}
+
+function openTodayRecipe() {
+  if (currentTodayRecipeKey) openRecipeModal(currentTodayRecipeKey);
+}
+
+function toggleSkip() {
+  const now = new Date();
+  const viewDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + dayOffset);
+  const dateKey = getDateKey(viewDate);
+  const skips = getSkipData();
+
+  if (skips[dateKey]?.skipped) {
+    delete skips[dateKey];
+  } else {
+    skips[dateKey] = { skipped: true, reason: '' };
+  }
+  saveSkipData(skips);
+  renderToday();
+}
+
+function saveSkipReason() {
+  const now = new Date();
+  const viewDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + dayOffset);
+  const dateKey = getDateKey(viewDate);
+  const skips = getSkipData();
+  if (skips[dateKey]) {
+    skips[dateKey].reason = document.getElementById('skippedReason').value;
+    saveSkipData(skips);
   }
 }
 
 // ═══════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════
+renderToday();
 renderCalendar();
 renderRotation();
 renderShopping();
 renderRecipes();
 updatePrintHeader(1);
+
+// Swipe support for daily view
+(function() {
+  let startX = 0;
+  const todayView = document.getElementById('view-today');
+  todayView.addEventListener('touchstart', e => { startX = e.touches[0].clientX; }, { passive: true });
+  todayView.addEventListener('touchend', e => {
+    const diff = e.changedTouches[0].clientX - startX;
+    if (Math.abs(diff) > 60) {
+      shiftDay(diff < 0 ? 1 : -1);
+    }
+  }, { passive: true });
+})();
 </script>
 </body>
 </html>
