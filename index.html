@@ -1639,7 +1639,7 @@ function adaptRecipe(r) {
     isLeftover: tags.includes('leftover'),
     desc: r.notes || '',
     ingredients: (r.ingredients || []).map(formatIngredient),
-    steps: r.steps || [],
+    steps: (r.steps || []).map(s => typeof s === 'string' ? s : (s.instruction || s.text || '')),
     tags
   };
 }
