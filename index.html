@@ -1415,8 +1415,8 @@
   ═══════════════════════════════════════ -->
   <div id="view-weekly" class="view">
     <div class="page-header">
-      <h2>This Week's Dinners</h2>
-      <p>Pulled live from the meal plan — falls back to the rotation template for any unfilled days.</p>
+      <h2>Next 7 Days</h2>
+      <p>Rolling 7-day view from today. Live from the meal plan — falls back to the rotation template for unfilled days.</p>
     </div>
 
     <div class="week-hero" id="week-hero">
@@ -2026,10 +2026,11 @@ function showView(name, btnEl) {
 // ═══════════════════════════════════════
 function renderCalendar() {
   const grid = document.getElementById('calendar-grid');
-  const start = startOfISOWeek(new Date());
+  const today = new Date();
+  const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   const end = dateAddDays(start, 6);
   const days = dateRangeDays(start, 7);
-  document.getElementById('hero-title').textContent = 'This Week';
+  document.getElementById('hero-title').textContent = 'Next 7 Days';
   document.getElementById('hero-sub').textContent = fmtMonDay(start) + ' – ' + fmtMonDay(end) + ', ' + start.getFullYear();
   grid.innerHTML = days.map(d => {
     const meal = mealForDate(d);
