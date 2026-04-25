@@ -1645,6 +1645,264 @@ function adaptRecipe(r) {
 }
 
 // ═══════════════════════════════════════
+// GROCERY AGGREGATION (parse, normalize, sum, pack-round)
+// ═══════════════════════════════════════
+function parseAmount(amount) {
+  if (amount == null) return null;
+  const s = String(amount).trim();
+  if (!s) return null;
+  let m;
+  if ((m = s.match(/^(\d+)\s+(\d+)\/(\d+)$/))) return +m[1] + (+m[2]) / (+m[3]);  // "1 1/2"
+  if ((m = s.match(/^(\d+)\/(\d+)$/)))          return (+m[1]) / (+m[2]);          // "1/3"
+  const n = parseFloat(s);
+  return Number.isFinite(n) ? n : null;
+}
+
+function formatAmount(n) {
+  if (n == null) return '';
+  if (Math.abs(n - Math.round(n)) < 0.01) return String(Math.round(n));
+  const fractions = [
+    [1/8,'1/8'], [1/4,'1/4'], [1/3,'1/3'], [3/8,'3/8'], [1/2,'1/2'],
+    [5/8,'5/8'], [2/3,'2/3'], [3/4,'3/4'], [7/8,'7/8']
+  ];
+  const whole = Math.floor(n);
+  const frac = n - whole;
+  for (const [val, str] of fractions) {
+    if (Math.abs(frac - val) < 0.03) return whole > 0 ? `${whole} ${str}` : str;
+  }
+  return (Math.round(n * 100) / 100).toString().replace(/\.?0+$/, '');
+}
+
+// Drop adjectives/parentheticals/post-comma prep notes so "garlic, minced" and "garlic" merge.
+function normalizeIngredientName(name) {
+  return (name || '')
+    .toLowerCase()
+    .replace(/\(.*?\)/g, '')
+    .replace(/,.*$/, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// Map known synonyms / variants to a canonical shopping name.
+// Order matters: more specific patterns first.
+const NAME_ALIASES = [
+  { canonical: 'shredded mozzarella', patterns: [/shredded mozzarella/] },
+  { canonical: 'shredded cheese',     patterns: [/shredded cheese( blend)?|shredded cheddar/] },
+  { canonical: 'green onions',        patterns: [/green onions?( or chives?)?|scallions?|chives?/] },
+  { canonical: 'garlic',              patterns: [/^(frozen )?garlic( cubes?)?( or (fresh )?minced cloves?)?$/, /^garlic$/] },
+  { canonical: 'arugula',             patterns: [/arugula( or simple greens?)?/] },
+  { canonical: 'red onion',           patterns: [/red.*onion|red or yellow onion|yellow onion/] },
+  { canonical: 'cucumber',            patterns: [/cucumber/] },
+  { canonical: 'cilantro',            patterns: [/^cilantro$/] },
+  { canonical: 'fresh parsley',       patterns: [/parsley/] },
+  { canonical: 'lemon',               patterns: [/^lemon( zest and juice)?$|lemon$|lemon juice|lemon zest/] }
+];
+
+function canonicalName(name) {
+  const norm = normalizeIngredientName(name);
+  for (const a of NAME_ALIASES) {
+    for (const p of a.patterns) if (p.test(norm)) return a.canonical;
+  }
+  return norm;
+}
+
+// Best-effort unit cleanup: lowercase, drop adjectives ("dry"/"fresh"/"cooked"), singularize plurals.
+const UNIT_SINGULAR = {
+  cups: 'cup', tbsps: 'tbsp', tsps: 'tsp', lbs: 'lb',
+  cloves: 'clove', cans: 'can', jars: 'jar', packets: 'packet',
+  slices: 'slice', pieces: 'piece', sticks: 'stick', bags: 'bag',
+  heads: 'head', pints: 'pint', bottles: 'bottle', boxes: 'box', bunches: 'bunch'
+};
+function normalizeUnit(unit) {
+  let u = (unit || '').toLowerCase().trim();
+  u = u.replace(/\b(dry|fresh|cooked)\b/g, '').replace(/\s+/g, ' ').trim();
+  return UNIT_SINGULAR[u] || u;
+}
+
+// Unit classification. Within a class, amounts convert to a canonical unit.
+const UNIT_CLASSES = {
+  // volume → cups
+  cup: { class: 'volume', toCanonical: 1,    canonical: 'cup' },
+  tbsp:{ class: 'volume', toCanonical: 1/16, canonical: 'cup' },
+  tsp: { class: 'volume', toCanonical: 1/48, canonical: 'cup' },
+  // weight → oz
+  lb:  { class: 'weight', toCanonical: 16,   canonical: 'oz' },
+  oz:  { class: 'weight', toCanonical: 1,    canonical: 'oz' }
+  // counts (large/medium/small/clove/can/packet/jar/slice/etc.) stay in their own buckets
+};
+const NO_QTY_UNITS = new Set(['to taste', 'drizzle', 'handful', '']);
+
+function unitInfo(unit) {
+  return UNIT_CLASSES[normalizeUnit(unit)] || null;
+}
+
+// Return a friendly display unit for a canonical-class total. Stays in cups down to 1/4 cup,
+// then drops to tbsp; stays in oz up to 16 oz, then jumps to lb.
+function pickDisplayUnit(canonicalUnit, total) {
+  if (canonicalUnit === 'cup') {
+    if (total < 1/48)  return { unit: 'tsp',  amount: total * 48 };
+    if (total < 1/4)   return { unit: 'tbsp', amount: total * 16 };
+    return { unit: 'cup', amount: total };
+  }
+  if (canonicalUnit === 'oz') {
+    if (total >= 16)   return { unit: 'lb', amount: total / 16 };
+    return { unit: 'oz', amount: total };
+  }
+  return { unit: canonicalUnit, amount: total };
+}
+
+// All canonical-class unit variants for a given canonical unit, with each variant's amount.
+function unitVariants(canonicalUnit, canonicalAmount) {
+  const out = [];
+  for (const [u, info] of Object.entries(UNIT_CLASSES)) {
+    if (info.canonical === canonicalUnit) {
+      out.push({ unit: u, amount: canonicalAmount / info.toCanonical });
+    }
+  }
+  return out;
+}
+
+// Pack-size lookup. Each rule: ingredient name substring(s) + acceptable units → pack label + qty per pack.
+// Rules with `unit:'*'` apply to any unit in the matched class; specific units take precedence.
+const PACK_SIZES = [
+  // Dairy
+  { match: ['sour cream'],                                          unit: 'cup',  pack: '16 oz tub',         per: 2 },
+  { match: ['heavy cream'],                                          unit: 'cup',  pack: '1 pint',            per: 2 },
+  { match: ['cream cheese'],                                         unit: 'oz',   pack: '8 oz block',        per: 8 },
+  { match: ['butter'],                                               unit: 'tbsp', pack: '1 stick',           per: 8 },
+  { match: ['butter'],                                               unit: 'cup',  pack: '1 stick',           per: 0.5 },
+  { match: ['shredded mozzarella','shredded cheese','mozzarella'],   unit: 'cup',  pack: '16 oz bag',         per: 4 },
+  { match: ['shredded mozzarella','shredded cheese','mozzarella'],   unit: 'oz',   pack: '16 oz bag',         per: 16 },
+  { match: ['parmesan'],                                             unit: 'cup',  pack: '8 oz wedge',        per: 2 },
+  { match: ['ricotta','cottage cheese'],                             unit: 'oz',   pack: '15 oz tub',         per: 15 },
+  { match: ['fresh mozzarella'],                                     unit: 'oz',   pack: '8 oz container',    per: 8 },
+  // Pantry oils, sauces, condiments
+  { match: ['olive oil'],                                            unit: 'cup',  pack: '25 oz bottle',      per: 3 },
+  { match: ['olive oil'],                                            unit: 'tbsp', pack: '25 oz bottle',      per: 50 },
+  { match: ['soy sauce'],                                            unit: 'cup',  pack: '1 large bottle',    per: 4 },
+  { match: ['soy sauce'],                                            unit: 'tbsp', pack: '1 large bottle',    per: 64 },
+  { match: ['balsamic vinegar'],                                     unit: 'cup',  pack: '1 bottle',          per: 2 },
+  { match: ['balsamic glaze'],                                       unit: '*',    pack: '1 bottle',          per: 1 },
+  { match: ['dijon mustard'],                                        unit: 'cup',  pack: '12 oz jar',         per: 1.5 },
+  { match: ['sesame oil'],                                           unit: 'tbsp', pack: '1 small bottle',    per: 16 },
+  { match: ['oyster sauce'],                                         unit: 'tbsp', pack: '1 small bottle',    per: 16 },
+  { match: ['teriyaki sauce'],                                       unit: 'cup',  pack: '1 bottle',          per: 2 },
+  { match: ['honey'],                                                unit: 'tbsp', pack: '1 jar',             per: 32 },
+  { match: ['maple syrup'],                                          unit: 'tbsp', pack: '1 small bottle',    per: 16 },
+  { match: ['apple cider vinegar'],                                  unit: 'tbsp', pack: '1 bottle',          per: 32 },
+  { match: ['tahini'],                                               unit: 'tbsp', pack: '1 jar',             per: 16 },
+  { match: ['worcestershire'],                                       unit: 'tbsp', pack: '1 bottle',          per: 20 },
+  { match: ['marinara','pizza sauce','pasta sauce'],                 unit: 'oz',   pack: '24 oz jar',         per: 24 },
+  { match: ['salsa'],                                                unit: '*',    pack: '1 jar',             per: 1 },
+  { match: ['taco seasoning'],                                       unit: 'packet', pack: '1 packet',        per: 1 },
+  { match: ['chicken broth','beef broth','vegetable broth','broth'], unit: 'cup',  pack: '32 oz carton',      per: 4 },
+  { match: ['crushed tomatoes','diced tomatoes','tomato'],           unit: 'can',  pack: '1 can',             per: 1 },
+  { match: ['black beans','kidney beans','refried beans','beans'],   unit: 'can',  pack: '1 can',             per: 1 },
+  { match: ['sun-dried tomatoes'],                                   unit: 'cup',  pack: '1 jar',             per: 1 },
+  { match: ['arugula'],                                              unit: 'cup',  pack: '1 bag',             per: 4 },
+  { match: ['brussels sprouts'],                                     unit: 'cup',  pack: '1 lb bag',          per: 4 },
+  { match: ['frozen broccoli','broccoli florets','broccoli'],        unit: 'cup',  pack: '1 bag',             per: 6 },
+  { match: ['frozen peas','frozen corn','frozen edamame'],           unit: 'cup',  pack: '1 bag',             per: 6 },
+  { match: ['cilantro','fresh basil','fresh parsley'],               unit: 'tbsp', pack: '1 bunch',           per: 999 },
+  { match: ['cucumber'],                                             unit: 'cup',  pack: '1 each',            per: 1 },
+  { match: ['cherry tomatoes'],                                      unit: 'cup',  pack: '1 pint',            per: 2 },
+  { match: ['naan','flatbread','pita'],                              unit: '*',    pack: '1 pack',            per: 6 },
+  { match: ['tortilla'],                                             unit: '*',    pack: '1 pack',            per: 12 },
+  { match: ['pesto'],                                                unit: 'tbsp', pack: '1 jar',             per: 16 },
+  { match: ['lemon'],                                                unit: '*',    pack: '1 each',            per: 1 },
+  // Carbs
+  { match: ['penne','rigatoni','ziti','spaghetti','pasta'],          unit: 'oz',   pack: '1 lb box',          per: 16 },
+  { match: ['penne','rigatoni','ziti','spaghetti','pasta'],          unit: 'lb',   pack: '1 lb box',          per: 1 },
+  { match: ['jasmine rice','rice'],                                  unit: 'cup',  pack: '1 large bag',       per: 30 },
+  { match: ['panko'],                                                unit: 'cup',  pack: '1 box',             per: 8 },
+  // Proteins (loose — chicken thigh/ground beef pack sizes vary at Costco)
+  { match: ['eggs','egg'],                                           unit: '*',    pack: '1 dozen',           per: 12 },
+  // Produce
+  { match: ['garlic'],                                               unit: 'cloves', pack: '1 head',          per: 10 },
+  { match: ['lime','limes'],                                         unit: '*',    pack: '1 each',            per: 1 },
+  { match: ['onion','red onion','yellow onion'],                     unit: '*',    pack: '1 each',            per: 1 },
+  { match: ['bell pepper'],                                          unit: '*',    pack: '1 each',            per: 1 },
+  // Spices — 1 jar typically covers many recipes
+  { match: ['cumin','chili powder','paprika','italian seasoning','onion powder','garlic powder','ginger','thyme','red pepper flakes','smoked paprika'],
+    unit: '*', pack: '1 jar', per: 999 }
+];
+
+function findPackSize(name, unit) {
+  // Prefer exact-unit rules over wildcards; prefer longer ingredient-name matches.
+  const u = normalizeUnit(unit);
+  const candidates = [];
+  for (const p of PACK_SIZES) {
+    const matchLen = p.match.find(m => name.includes(m))?.length || 0;
+    if (!matchLen) continue;
+    const ruleUnit = p.unit === '*' ? '*' : normalizeUnit(p.unit);
+    const unitOk = ruleUnit === '*' || ruleUnit === u;
+    if (!unitOk) continue;
+    candidates.push({ p, matchLen, unitSpecific: ruleUnit !== '*' });
+  }
+  if (!candidates.length) return null;
+  candidates.sort((a, b) =>
+    (b.unitSpecific - a.unitSpecific) || (b.matchLen - a.matchLen)
+  );
+  return candidates[0].p;
+}
+
+// Group by canonical ingredient name, sum within each class, return display lines.
+// Each line carries `variants` so the pack-size lookup can try cup/tbsp/tsp etc.
+function aggregateStoreItems(items) {
+  const groups = {};
+  for (const it of items) {
+    const name = canonicalName(it.name);
+    if (!name) continue;
+    const g = groups[name] = groups[name] || { name, byClass: {}, byCount: {}, noQty: false };
+    const unit = normalizeUnit(it.unit);
+    const amt = parseAmount(it.amount);
+    if (NO_QTY_UNITS.has(unit) && amt == null) { g.noQty = true; continue; }
+    const ui = unitInfo(unit);
+    if (ui && amt != null) {
+      const bucket = g.byClass[ui.canonical] = g.byClass[ui.canonical] || { canonical: ui.canonical, total: 0 };
+      bucket.total += amt * ui.toCanonical;
+    } else if (amt != null) {
+      g.byCount[unit] = (g.byCount[unit] || 0) + amt;
+    } else {
+      g.noQty = true;
+    }
+  }
+  return Object.values(groups).map(g => {
+    const lines = [];
+    for (const bucket of Object.values(g.byClass)) {
+      const display = pickDisplayUnit(bucket.canonical, bucket.total);
+      lines.push({ ...display, variants: unitVariants(bucket.canonical, bucket.total) });
+    }
+    for (const [unit, amount] of Object.entries(g.byCount)) {
+      lines.push({ unit, amount, variants: [{ unit, amount }] });
+    }
+    return { name: g.name, lines, noQty: g.noQty && lines.length === 0 };
+  }).sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function describeLine(line, ingredientName) {
+  // Pack-rule wins over raw amount. Try every unit variant in the same class.
+  const variants = line.variants || [{ unit: line.unit, amount: line.amount }];
+  for (const v of variants) {
+    const pack = findPackSize(ingredientName, v.unit);
+    if (pack) {
+      const packs = Math.max(1, Math.ceil(v.amount / pack.per));
+      return `${packs} × ${pack.pack}`;
+    }
+  }
+  // No pack rule: render the chosen display unit, but suppress "X unit" when unit equals name
+  // (e.g. "1/4 lemon" for the lemon ingredient — avoids "1/4 lemon · Lemon").
+  const amt = formatAmount(line.amount);
+  const unitMatchesName = ingredientName && (line.unit === ingredientName || line.unit + 's' === ingredientName);
+  if (unitMatchesName) return amt;
+  return [amt, line.unit].filter(Boolean).join(' ').trim();
+}
+
+function titleCase(s) {
+  return s.replace(/\b\w/g, c => c.toUpperCase());
+}
+
+// ═══════════════════════════════════════
 // DATE / WEEK HELPERS
 // ═══════════════════════════════════════
 function startOfISOWeek(date) {
@@ -1884,7 +2142,9 @@ function printList() {
 
 function renderShopping() {
   const layout = document.getElementById('shopping-layout');
-  const byStore = groceryListByStore();
+  const byStoreRaw = groceryListByStore();
+  const byStore = {};
+  for (const k of Object.keys(byStoreRaw)) byStore[k] = aggregateStoreItems(byStoreRaw[k]);
   const stores = STORE_ORDER.filter(k => byStore[k] && byStore[k].length);
   if (stores.length === 0) {
     layout.innerHTML = '<p style="text-align:center;color:var(--warm-gray);padding:2rem">No meals planned for this week.</p>';
@@ -1907,12 +2167,15 @@ function renderShopping() {
             ${items.map((it, idx) => {
               const id = `${storeKey}-${idx}`;
               const checked = checkedItems[id] || false;
-              const amt = [it.amount, it.unit].filter(x => x && String(x).trim()).join(' ');
-              const label = amt ? `${amt} ${it.name}` : it.name;
+              const qty = it.lines.length
+                ? it.lines.map(l => describeLine(l, it.name)).join(' + ')
+                : '';
+              const name = titleCase(it.name);
+              const label = qty ? `<strong>${qty}</strong> · ${name}` : name;
               return `
                 <div class="shopping-item ${checked ? 'checked' : ''}" id="item-${id}">
                   <input type="checkbox" id="cb-${id}" ${checked ? 'checked' : ''} onchange="toggleItem('${id}')">
-                  <label for="cb-${id}">${label} <span style="color:var(--warm-gray);font-size:0.78rem;">— ${it.day} · ${it.recipeName}</span></label>
+                  <label for="cb-${id}">${label}</label>
                 </div>`;
             }).join('')}
           </div>
