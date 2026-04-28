@@ -2000,7 +2000,7 @@ function buildMeal(date, row, source) {
     emoji: recipe ? recipeMeta(tags).emoji : '🍽️',
     isHit: tags.includes('kid_favorite'),
     isLeftover: tags.includes('leftover'),
-    veggie: row.side_dish || row.notes || '',
+    veggie: row.side || row.side_dish || '',
     note: row.notes || '',
     recipe
   };
