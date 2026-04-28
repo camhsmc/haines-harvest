@@ -1477,7 +1477,7 @@
   <div id="view-recipes" class="view">
     <div class="page-header">
       <h2>Recipe Cards</h2>
-      <p>All 15 family-tested dinners. Tap any card for ingredients and steps.</p>
+      <p id="recipes-subhead">All family-tested dinners. Tap any card for ingredients and steps.</p>
     </div>
     <div class="recipe-grid" id="recipe-grid"></div>
   </div>
@@ -1948,11 +1948,12 @@ function getRotationInfo(date) {
   return { rotationWeek: Math.floor(dayInCycle/7) + 1, dayInWeek: dayInCycle % 7 };
 }
 
-// Each plan row's actual date = first day on/after week_of whose name matches day_of_week.
-// (Convention: week_of is the anchor; the listed day name resolves forward.)
+// Each plan row's actual date. Prefer `meal_date` (stored generated column).
+// Fallback: first day on/after week_of whose name matches day_of_week.
 function planRowDate(row) {
+  if (row.meal_date) return new Date(row.meal_date + 'T00:00:00');
   const wk = new Date(row.week_of + 'T00:00:00');
-  const wkIdxMon0 = (wk.getDay() + 6) % 7;                                        // Mon=0..Sun=6
+  const wkIdxMon0 = (wk.getDay() + 6) % 7;
   const targetIdxMon0 = ORDERED_DAYS.indexOf((row.day_of_week || '').toLowerCase());
   if (targetIdxMon0 < 0) return null;
   const offset = (targetIdxMon0 - wkIdxMon0 + 7) % 7;
@@ -2204,6 +2205,8 @@ function clearStore(storeKey) {
 // ═══════════════════════════════════════
 function renderRecipes() {
   const grid = document.getElementById('recipe-grid');
+  const sub = document.getElementById('recipes-subhead');
+  if (sub) sub.textContent = `All ${RECIPE_LIST.length} family-tested recipes. Tap any card for ingredients and steps.`;
   grid.innerHTML = RECIPE_LIST.map(r => `
     <div class="recipe-card" onclick="openRecipeModal('${r.key}')">
       <div class="recipe-card-top" style="background:${r.bgColor}">
