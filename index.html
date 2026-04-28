@@ -1637,16 +1637,60 @@ function formatTime(prep, cook) {
   return (prep + cook) + ' min';
 }
 
+// Approximate gram conversions for sauce/marinade ingredients. Name-matched
+// (case-insensitive). Skip whole proteins, produce, dry pantry — the gram
+// annotation is for things you'd weigh on a scale during prep.
+const GRAMS_PER_UNIT = [
+  { match: /^honey$/,                                                                 perCup: 340, perTbsp: 21, perTsp: 7 },
+  { match: /^maple syrup$/,                                                           perCup: 320, perTbsp: 20, perTsp: 7 },
+  { match: /^(olive|sesame|vegetable|avocado|canola) oil$/,                           perCup: 218, perTbsp: 13.5, perTsp: 4.5 },
+  { match: /^soy sauce$/,                                                             perCup: 250, perTbsp: 16, perTsp: 5 },
+  { match: /^(balsamic |apple cider |red wine |white wine |champagne |rice )?vinegar$/, perCup: 240, perTbsp: 15, perTsp: 5 },
+  { match: /^(dijon )?mustard$/,                                                      perCup: 250, perTbsp: 15, perTsp: 5 },
+  { match: /^tahini$/,                                                                perCup: 240, perTbsp: 15, perTsp: 5 },
+  { match: /worcestershire/,                                                          perCup: 240, perTbsp: 15, perTsp: 5 },
+  { match: /^oyster sauce$/,                                                          perCup: 280, perTbsp: 18, perTsp: 6 },
+  { match: /^teriyaki/,                                                               perCup: 250, perTbsp: 16, perTsp: 5 },
+  { match: /(lemon|lime|orange) juice|^fresh (lemon|lime) juice$/,                    perCup: 240, perTbsp: 15, perTsp: 5 },
+  { match: /^(warm |cold )?water$/,                                                   perCup: 240, perTbsp: 15, perTsp: 5 },
+  { match: /^pesto$/,                                                                 perCup: 240, perTbsp: 15, perTsp: 5 },
+  { match: /^sour cream$/,                                                            perCup: 230, perTbsp: 14, perTsp: 5 },
+  { match: /yogurt/,                                                                  perCup: 245, perTbsp: 15, perTsp: 5 },
+  { match: /^(heavy |whipping )?cream$/,                                              perCup: 240, perTbsp: 15, perTsp: 5 },
+  { match: /cream cheese/,                                                            perCup: 240, perTbsp: 15, perTsp: 5 },
+  { match: /garlic/,                                                                  perClove: 3 }
+];
+
+function gramsForIngredient(name, amount, unit) {
+  const n = (name || '').toLowerCase().trim().replace(/\(.*?\)/g, '').replace(/,.*$/, '').trim();
+  const a = parseAmount(amount);
+  if (a == null) return null;
+  const u = normalizeUnit(unit);
+  for (const r of GRAMS_PER_UNIT) {
+    if (!r.match.test(n)) continue;
+    if (u === 'cup'   && r.perCup)   return Math.round(a * r.perCup);
+    if (u === 'tbsp'  && r.perTbsp)  return Math.round(a * r.perTbsp);
+    if (u === 'tsp'   && r.perTsp)   return Math.round(a * r.perTsp);
+    if (u === 'clove' && r.perClove) return Math.round(a * r.perClove);
+  }
+  return null;
+}
+
 function formatIngredient(ing) {
   const amount = (ing.amount ?? '').toString().trim();
   const unit   = (ing.unit   ?? '').trim();
   const name   = (ing.name   ?? '').trim();
   const trailingUnits = ['to taste', 'drizzle', 'handful'];
   const isTrailing = trailingUnits.includes(unit);
+  let line;
   if (isTrailing) {
-    return [amount, name].filter(Boolean).join(' ') + (name ? `, ${unit}` : unit);
+    line = [amount, name].filter(Boolean).join(' ') + (name ? `, ${unit}` : unit);
+  } else {
+    line = [amount, unit, name].filter(Boolean).join(' ');
   }
-  return [amount, unit, name].filter(Boolean).join(' ');
+  const g = gramsForIngredient(name, amount, unit);
+  if (g != null) line += ` (${g}g)`;
+  return line;
 }
 
 function adaptRecipe(r) {
