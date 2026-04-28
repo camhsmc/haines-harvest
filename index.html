@@ -221,13 +221,6 @@
     font-weight: 600;
   }
 
-  .theme-label {
-    font-size: 0.75rem;
-    color: var(--gold-light);
-    font-weight: 600;
-    margin-top: 2px;
-  }
-
   .day-body {
     padding: 14px;
   }
@@ -1009,19 +1002,6 @@
     filter: grayscale(0.6);
   }
 
-  .today-theme {
-    font-size: 0.72rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    color: var(--rust);
-    background: rgba(196,98,45,0.1);
-    display: inline-block;
-    padding: 4px 14px;
-    border-radius: 20px;
-    margin-bottom: 16px;
-  }
-
   .today-emoji { font-size: 4rem; margin-bottom: 12px; }
 
   .today-meal-name {
@@ -1295,7 +1275,6 @@
     }
 
     .day-name { font-size: 0.68rem; }
-    .theme-label { font-size: 0.62rem; }
 
     .day-body {
       padding: 12px;
@@ -1385,7 +1364,6 @@
     </div>
 
     <div class="today-card" id="todayCard">
-      <div class="today-theme" id="todayTheme"></div>
       <div class="today-emoji" id="todayEmoji"></div>
       <div class="today-meal-name" id="todayMealName"></div>
       <div class="today-veggie" id="todayVeggie"></div>
@@ -1440,7 +1418,7 @@
   <div id="view-rotation" class="view">
     <div class="page-header">
       <h2>4-Week Rotation</h2>
-      <p>Complete at week 4, then restart. Same themes every week — new meals throughout.</p>
+      <p>The canonical 4-week meal pattern. Live plan rows can override any day.</p>
     </div>
 
     <div class="rotation-grid" id="rotation-grid"></div>
@@ -1517,11 +1495,6 @@ const REST_HEADERS = { apikey: SUPABASE_KEY };
 // ═══════════════════════════════════════
 // STATIC LOOKUPS
 // ═══════════════════════════════════════
-const themes = {
-  Mon: 'Pasta Night', Tue: 'Taco Night', Wed: 'Crockpot Night',
-  Thu: 'Sheet Pan / Air Fryer', Fri: 'Pizza Night',
-  Sat: 'Grill Night', Sun: 'Leftover Remix'
-};
 
 // Tag-priority list — first matching tag wins for emoji/category/color/tool.
 const TAG_META = {
@@ -2124,7 +2097,6 @@ function renderCalendar() {
       <div class="day-card" onclick="openRecipeModal('${meal.recipeKey}')">
         <div class="day-header">
           <div class="day-name">${dayLabel}</div>
-          <div class="theme-label">${themes[dayAbbrev] || ''}</div>
         </div>
         <div class="day-body">
           <span class="meal-emoji">${meal.emoji}</span>
@@ -2437,7 +2409,6 @@ function renderToday() {
 
   if (!meal) {
     document.getElementById('todayWeekLabel').textContent = '';
-    document.getElementById('todayTheme').textContent = '';
     document.getElementById('todayEmoji').textContent = '📅';
     document.getElementById('todayMealName').textContent = 'No meal planned';
     document.getElementById('todayVeggie').textContent = '';
@@ -2458,7 +2429,6 @@ function renderToday() {
 
   document.getElementById('todayWeekLabel').textContent =
     info ? ('Rotation Week ' + info.rotationWeek + ' of 4') : '';
-  document.getElementById('todayTheme').textContent = themes[dayAbbrev] || '';
   document.getElementById('todayEmoji').textContent = meal.emoji;
   document.getElementById('todayMealName').textContent = meal.name;
   document.getElementById('todayVeggie').textContent = meal.veggie ? '🥦 ' + meal.veggie : '';
