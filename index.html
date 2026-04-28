@@ -1553,6 +1553,32 @@ const STORE_DEFS = {
 };
 const STORE_ORDER = ['costco','aldi','festival_foods','any','leftover'];
 
+// Aisle grouping inside each store. Order = display order in the rendered list.
+// AISLE_RULES is checked in declared order; first regex match wins. Put more
+// specific rules (Frozen, Bakery) before broad ones (Produce).
+const AISLES_ORDER = [
+  'Produce', 'Meat & Seafood', 'Dairy & Eggs', 'Bakery & Bread',
+  'Frozen', 'Canned & Jarred', 'Pantry & Dry Goods',
+  'Condiments, Sauces & Oils', 'Spices', 'Other'
+];
+const AISLE_RULES = [
+  // Broth/stock first — beats the Meat rule's "chicken"
+  { aisle: 'Pantry & Dry Goods',        match: /\b(chicken broth|beef broth|vegetable broth|broth|stock)\b/ },
+  { aisle: 'Frozen',                    match: /\bfrozen\b/ },
+  { aisle: 'Bakery & Bread',            match: /\b(naan|tortillas?|pitas?|buns?|breads?|flatbreads?|doughs?|baguettes?|biscuits?|bagels?|chips)\b/ },
+  { aisle: 'Canned & Jarred',           match: /\b(canned|refried|crushed tomatoes?|diced tomatoes?|tomato paste|pizza sauce|marinara|pasta sauce|jarred|sun-dried)\b/ },
+  { aisle: 'Dairy & Eggs',              match: /\b(milk|cream|sour cream|yogurt|cheeses?|mozzarella|parmesan|feta|cottage|ricotta|butter|eggs?)\b/ },
+  { aisle: 'Meat & Seafood',            match: /\b(steaks?|flank|chickens?|sausages?|beef|pork|prosciutto|bacon|ham|tuna|salmon|fish|turkey|protein)\b/ },
+  { aisle: 'Spices',                    match: /\b(salt|pepper|cumin|paprika|chili powder|garlic powder|onion powder|italian seasoning|red pepper flakes|ginger|thyme|oregano|cinnamon|smoked|taco seasoning|seasoning)\b/ },
+  { aisle: 'Condiments, Sauces & Oils', match: /\b(olive oil|sesame|soy sauce|balsamic|vinegar|honey|mustard|ketchup|mayo|tahini|maple|teriyaki|oyster|worcester|pesto|hot sauce|sriracha|peanut butter|salsa|ranch)\b/ },
+  { aisle: 'Pantry & Dry Goods',        match: /\b(pasta|penne|rigatoni|spaghetti|ziti|rice|panko|breadcrumbs?|sugar|flour|walnuts?|almonds?|seeds?|oats?|nuts?)\b/ },
+  { aisle: 'Produce',                   match: /\b(arugula|basil|parsley|cilantro|cucumbers?|garlic|green onions?|lemons?|lettuce|onions?|peppers?|tomatoes?|sweet potatoes?|potatoes?|zucchinis?|avocados?|limes?|broccolis?|carrots?|celery|herbs?|peaches?|spinach|kale|romaine|jalapen|chile|mushrooms?|brussels sprouts?|edamame|corn|green beans?|fruit|veggies?|vegetables?)\b/ }
+];
+function aisleFor(name) {
+  for (const r of AISLE_RULES) if (r.match.test(name)) return r.aisle;
+  return 'Other';
+}
+
 const ORDERED_DAYS = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
 const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 const DAY_ABBREVS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -2155,6 +2181,31 @@ function renderShopping() {
   layout.innerHTML = stores.map(storeKey => {
     const def = STORE_DEFS[storeKey] || { label: storeKey, subtitle: '', icon: '🛒' };
     const items = byStore[storeKey];
+    // Group by aisle, preserve item indices for stable checkbox ids.
+    const byAisle = {};
+    items.forEach((it, idx) => {
+      const a = aisleFor(it.name);
+      (byAisle[a] = byAisle[a] || []).push({ it, idx });
+    });
+    const aislesPresent = AISLES_ORDER.filter(a => byAisle[a] && byAisle[a].length);
+    const sectionsHtml = aislesPresent.map(aisle => `
+      <div class="shopping-category">
+        <h4>${aisle}</h4>
+        ${byAisle[aisle].map(({ it, idx }) => {
+          const id = `${storeKey}-${idx}`;
+          const checked = checkedItems[id] || false;
+          const qty = it.lines.length
+            ? it.lines.map(l => describeLine(l, it.name)).join(' + ')
+            : '';
+          const name = titleCase(it.name);
+          const label = qty ? `<strong>${qty}</strong> · ${name}` : name;
+          return `
+            <div class="shopping-item ${checked ? 'checked' : ''}" id="item-${id}">
+              <input type="checkbox" id="cb-${id}" ${checked ? 'checked' : ''} onchange="toggleItem('${id}')">
+              <label for="cb-${id}">${label}</label>
+            </div>`;
+        }).join('')}
+      </div>`).join('');
     return `
       <div class="store-card">
         <div class="store-header">
@@ -2165,22 +2216,7 @@ function renderShopping() {
           </div>
         </div>
         <div class="store-body">
-          <div class="shopping-category">
-            ${items.map((it, idx) => {
-              const id = `${storeKey}-${idx}`;
-              const checked = checkedItems[id] || false;
-              const qty = it.lines.length
-                ? it.lines.map(l => describeLine(l, it.name)).join(' + ')
-                : '';
-              const name = titleCase(it.name);
-              const label = qty ? `<strong>${qty}</strong> · ${name}` : name;
-              return `
-                <div class="shopping-item ${checked ? 'checked' : ''}" id="item-${id}">
-                  <input type="checkbox" id="cb-${id}" ${checked ? 'checked' : ''} onchange="toggleItem('${id}')">
-                  <label for="cb-${id}">${label}</label>
-                </div>`;
-            }).join('')}
-          </div>
+          ${sectionsHtml}
           <button class="clear-btn" onclick="clearStore('${storeKey}')">↺ Clear checks</button>
         </div>
       </div>`;
