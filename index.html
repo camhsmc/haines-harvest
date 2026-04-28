@@ -2394,7 +2394,8 @@ function renderToday() {
   const viewDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + dayOffset);
   const dateKey = getDateKey(viewDate);
   const skips = getSkipData();
-  const isSkipped = skips[dateKey]?.skipped || false;
+  const skipEntry = skips[dateKey];
+  const isSkipped = !!skipEntry?.skipped;
 
   document.getElementById('todayDayName').textContent = DAY_NAMES[viewDate.getDay()];
   document.getElementById('todayDate').textContent =
@@ -2405,7 +2406,31 @@ function renderToday() {
   const skippedBanner = document.getElementById('todaySkippedBanner');
   const prepEl = document.getElementById('todayPrep');
 
-  const meal = mealForDate(viewDate);
+  // When skipped, prefer the cached original meal so the user sees what they
+  // skipped (the row itself has been pushed to a future date).
+  let meal = mealForDate(viewDate);
+  if (isSkipped && skipEntry.movedRecipeId) {
+    const origRecipe = RECIPES_BY_ID[skipEntry.movedRecipeId];
+    const tags = (origRecipe && origRecipe.tags) || [];
+    const movedDate = skipEntry.movedTo
+      ? new Date(skipEntry.movedTo + 'T00:00:00')
+      : null;
+    meal = {
+      date: viewDate,
+      day: DAY_ABBREVS[viewDate.getDay()],
+      dayLong: DAY_NAMES[viewDate.getDay()],
+      source: 'skipped',
+      recipeId: skipEntry.movedRecipeId,
+      recipeKey: String(skipEntry.movedRecipeId),
+      name: skipEntry.movedRecipeTitle || (origRecipe && origRecipe.title) || '(unknown)',
+      emoji: origRecipe ? recipeMeta(tags).emoji : '🍽️',
+      isHit: tags.includes('kid_favorite'),
+      isLeftover: tags.includes('leftover'),
+      veggie: '',
+      note: movedDate ? `↳ Moved to ${DAY_ABBREVS[movedDate.getDay()]} ${MONTH_NAMES[movedDate.getMonth()].slice(0,3)} ${movedDate.getDate()}` : '',
+      recipe: origRecipe
+    };
+  }
 
   if (!meal) {
     document.getElementById('todayWeekLabel').textContent = '';
@@ -2470,19 +2495,97 @@ function openTodayRecipe() {
   if (currentTodayRecipeKey) openRecipeModal(currentTodayRecipeKey);
 }
 
-function toggleSkip() {
+// PATCH a hh_meal_plan row via REST. Returns the updated row.
+async function patchPlanRow(id, body) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/hh_meal_plan?id=eq.${id}`, {
+    method: 'PATCH',
+    headers: { ...REST_HEADERS, 'Content-Type': 'application/json', Prefer: 'return=representation' },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) throw new Error(`PATCH plan ${id} → ${res.status}`);
+  const arr = await res.json();
+  return arr[0];
+}
+
+// First date strictly after `afterDate` that has no plan row (excluding `excludeRowId`).
+function findNextOpenSlot(afterDate, excludeRowId) {
+  const occupied = new Set(
+    PLAN_ROWS.filter(r => r.id !== excludeRowId && r.meal_date).map(r => r.meal_date)
+  );
+  let d = dateAddDays(afterDate, 1);
+  for (let i = 0; i < 90; i++) {
+    if (!occupied.has(getDateKey(d))) return d;
+    d = dateAddDays(d, 1);
+  }
+  return null;
+}
+
+async function toggleSkip() {
   const now = new Date();
   const viewDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + dayOffset);
   const dateKey = getDateKey(viewDate);
   const skips = getSkipData();
+  const skipBtn = document.getElementById('todaySkipBtn');
+  const undoBtn = document.querySelector('.today-unskip-btn');
+  const setBusy = b => { if (skipBtn) skipBtn.disabled = b; if (undoBtn) undoBtn.disabled = b; };
 
   if (skips[dateKey]?.skipped) {
+    // UNDO: restore the row to its original date
+    const s = skips[dateKey];
+    if (s.movedRowId && s.originalWeekOf && s.originalDayOfWeek) {
+      try {
+        setBusy(true);
+        const updated = await patchPlanRow(s.movedRowId, {
+          week_of: s.originalWeekOf,
+          day_of_week: s.originalDayOfWeek
+        });
+        const row = PLAN_ROWS.find(r => r.id === s.movedRowId);
+        if (row) Object.assign(row, updated);
+      } catch (e) {
+        alert('Failed to undo: ' + e.message);
+        setBusy(false);
+        return;
+      }
+      setBusy(false);
+    }
     delete skips[dateKey];
+    saveSkipData(skips);
   } else {
-    skips[dateKey] = { skipped: true, reason: '' };
+    // SKIP: push the planned meal forward to the next open slot
+    const planRow = PLAN_ROWS.find(r => r.meal_date === dateKey);
+    const skipEntry = { skipped: true, reason: '' };
+    if (planRow) {
+      const next = findNextOpenSlot(viewDate, planRow.id);
+      if (next) {
+        try {
+          setBusy(true);
+          const newDateKey = getDateKey(next);
+          const newDayName = DAY_NAMES[next.getDay()];
+          const updated = await patchPlanRow(planRow.id, {
+            week_of: newDateKey,
+            day_of_week: newDayName
+          });
+          skipEntry.movedRowId = planRow.id;
+          skipEntry.movedTo = newDateKey;
+          skipEntry.movedRecipeId = planRow.recipe_id;
+          skipEntry.movedRecipeTitle = planRow.recipe_title;
+          skipEntry.originalWeekOf = planRow.week_of;
+          skipEntry.originalDayOfWeek = planRow.day_of_week;
+          Object.assign(planRow, updated);
+        } catch (e) {
+          alert('Failed to push meal forward: ' + e.message);
+          setBusy(false);
+          return;
+        }
+        setBusy(false);
+      }
+    }
+    skips[dateKey] = skipEntry;
+    saveSkipData(skips);
   }
-  saveSkipData(skips);
   renderToday();
+  renderCalendar();
+  renderShopping();
 }
 
 function saveSkipReason() {
