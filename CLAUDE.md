@@ -89,3 +89,58 @@ Cam came back after the trip. Pulled latest Cerebro asks via Notes 169 (audit), 
 - (New, from Cerebro Note 170) Sauces in grams as primary unit (full migration vs current parenthetical) — the parenthetical approach may be sufficient; revisit if Cam still wants the data-side migration.
 - Recipe 23's `2.25 cloves` garlic decimal artifact.
 - Pack-size, aisle, and gram lookups will keep needing one-line additions when new ingredient classes show up. The prosciutto/toasted-walnut/blue-cheese-crumbles fall-through items from last session are mostly still uncovered.
+
+---
+
+## 2026-04-29 — Steward agent + Sat–Fri shopping week + servings sweep
+
+Big build day. Three bundles in two commits.
+
+### Bundle 1 (`7b916fe`) — Sat–Fri grocery week, Serves chip, shop-day badge
+- **Servings normalized to 6** in `hh_recipes` for all 24 recipes (10 needed updating). The CLAUDE.md "Recipe 19 says Serves 11" note was stale — `servings` was never read by the JS until this session. Adapter now passes `r.servings` to the recipe modal, which renders a `🍽 Serves 6` chip alongside time/tool/Family Fave.
+- **Grocery week toggle** — replaced rolling 7-day with **Sat–Fri shop weeks** anchored to Cam's Saturday shop trip. New state `groceryWeekOffset` + `startOfShopWeek(date)` helper. ◀/▶ buttons, "This week" reset, label like `Apr 25 – May 1`. Per-week persistence in `localStorage.hh_grocery_checks` keyed by Monday's date (now Saturday's date in the new model). Hidden bug fixed in passing: under the old ISO Mon–Sun anchoring, Saturday meals were dropping out of the week's list until Sunday.
+- **Saturday "🛒 Grocery Shopping Day" badge** on the Next 7 Days view's Saturday card.
+
+### Bundle 2 (this commit) — Steward agent (Layer 1 + 2)
+**Vision (per Cam):** the Steward auto-plans a 4-week-forward dinner schedule from `hh_recipes`. Page-load JS, idempotent. Never touches the current shop week (already shopped). New recipes added via Claude sessions auto-slot into the next 2 weeks. Skipping a meal cascades into the following week.
+
+**Schema additions to `hh_meal_plan`:**
+- `carryover boolean default false` — meals pushed forward by skip
+- `edited_by_user boolean default false` — protects against bumping by `scheduleNewRecipe`
+
+**Steward function (`runSteward`, page-load, idempotent):**
+- Window: next shop week's Saturday through 4 shop weeks later (28 days)
+- Active recipes only, **excludes tags `sauce`, `condiment`, `dressing`, `salad_topper`, `bulk_protein_topper`** (caught when steward initially scheduled vinaigrette/romesco/pickled-onions as standalone dinners). Pool = 21 of 24 active recipes.
+- Picks oldest-last-seen first, **7-day cooldown** so the same recipe doesn't repeat too soon (looks at all of `PLAN_ROWS`, not just window)
+- Inserts with `edited_by_user=false`, `carryover=false`
+
+**4-Week Plan view rewritten** to read from `hh_meal_plan` (was reading from `hh_meal_rotation_template`, which is now effectively dead). Shows current shop week + next 3, dates in headers, clickable rows open recipe modal, `⏭` icon next to carryover meals.
+
+**Skip flow rewritten** as Postgres RPCs for atomicity:
+- `hh_skip_meal(p_skip_date)` — DELETE original, shift week N+1 onwards forward by 1 day (cross-week ripple), INSERT carryover at next Saturday with `carryover=true`, `edited_by_user=true`. The cascade tail's recipe gets dropped from the schedule (effectively replaced when the steward refills the now-empty last day on next page load).
+- `hh_unskip_meal(p_skip_date, p_recipe_id)` — reverse cascade. Only works for the most recent skip; older skips' carryovers have shifted forward by subsequent skips.
+- Day-of-week ↔ date math is encoded in CASE expressions; `meal_date` generated column auto-recomputes.
+
+**Grocery list filter** — `groceryListByStore` now skips any meal where `meal.carryover === true` so already-bought ingredients don't double-up next week.
+
+**`hh_schedule_new_recipe(p_recipe_id)` RPC** — entry point for future Claude sessions. After `INSERT INTO hh_recipes`, this finds the earliest steward-placed slot (`edited_by_user=false AND carryover=false`) in the next 2 shop weeks and swaps the recipe in, marking `edited_by_user=true`. If all next-2-week slots are user-protected, returns `queued=true` and the steward picks it up via rotation later.
+
+### Forward-compat notes
+- The `hh_meal_rotation_template` table is no longer the source of truth. `mealForDate` still falls back to it for dates outside the steward's 28-day window (rare; happens if Cam doesn't open the app for a long time). Could be deleted; left in place as a safety net.
+- Bootstrap May 2 (Smash Burgers) and May 3 (Taco Bar) plan rows are `edited_by_user=false`. A future `scheduleNewRecipe` call could displace them. Cam confirmed he doesn't care; if this becomes a problem we'll add a "lock this row" UI.
+
+### Verification — 14 + 12 assertions PASS via headless-Chrome QA
+- Steward: 28-row window fill, 7-day cooldown respected across plan, no duplicate dates, current week untouched
+- Cascade: Apr 29 skip → May 2 carryover, cross-week shift to May 3..May 29, recipe at May 29 displaced, idempotent re-run, no carryover ingredients in next-week grocery list, ⏭ rendered in 4-Week view
+- Pool filter: sauces/condiments/dressings excluded from steward picks; recipe 18 (chopped salad) correctly retained as a main
+
+### Status
+- All changes deployed to GitHub Pages (commit on `main`)
+- Real-world skip cascade not yet exercised on phone
+
+### Next / open
+- (v1.1) **Vacation mode** — `hh_vacations(start_date, end_date)` table; plan rows in range get deleted, grocery list skips those dates, shop-day badge hides, steward respects ranges. Was queued during this session (Cam asked about long family vacations).
+- (Carryover) Recipe 19 `servings` reframing — modal now correctly says "Serves 6" but the bulk-cook semantics are masked. Could add `bulk_cook` flag if it becomes confusing.
+- (Carryover) Cerebro Note 173 (breakfast/lunch in grocery list) and Note 170 (sauces in grams primary).
+- (Carryover) Pack-size / aisle / gram lookup tables — add one-liners as new ingredients show up.
+- Skip undo only works for the most recent skip. If Cam wants multi-skip undo, we'd need a skip log table.

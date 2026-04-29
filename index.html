@@ -1477,8 +1477,8 @@
   ═══════════════════════════════════════ -->
   <div id="view-rotation" class="view">
     <div class="page-header">
-      <h2>4-Week Rotation</h2>
-      <p>The canonical 4-week meal pattern. Live plan rows can override any day.</p>
+      <h2>4-Week Plan</h2>
+      <p>This shop week plus the next three. Auto-planned by the Steward — tap a meal to view the recipe.</p>
     </div>
 
     <div class="rotation-grid" id="rotation-grid"></div>
@@ -1669,6 +1669,95 @@ function recipeMeta(tags) {
   const t = tags || [];
   for (const k of TAG_PRIORITY) if (t.includes(k)) return TAG_META[k];
   return FALLBACK_META;
+}
+
+// ═══════════════════════════════════════
+// STEWARD — auto-fills empty plan rows for the next 4 shop weeks (Sat–Fri).
+// Idempotent: runs on every page load, no-ops if everything is already filled.
+// Never touches the current shop week (Cam already shopped). Picks recipes
+// using a 7-day cooldown, oldest-last-seen first.
+// ═══════════════════════════════════════
+const STEWARD_PLAN_WEEKS = 4;
+// Recipes tagged with any of these are accompaniments, not standalone dinners.
+const NON_MAIN_TAGS = new Set(['sauce', 'condiment', 'dressing', 'salad_topper', 'bulk_protein_topper']);
+
+function isMainDish(recipe) {
+  const tags = recipe && recipe.tags ? recipe.tags : [];
+  return !tags.some(t => NON_MAIN_TAGS.has(t));
+}
+
+async function runSteward() {
+  if (!PLAN_ROWS || !RECIPES_BY_ID) return { inserted: 0 };
+  const today = new Date();
+  const planStart = dateAddDays(startOfShopWeek(today), 7);          // next shop week's Sat
+  const planEnd = dateAddDays(planStart, STEWARD_PLAN_WEEKS * 7);    // exclusive
+
+  // Already-filled dates in window
+  const planStartKey = getDateKey(planStart);
+  const planEndKey = getDateKey(planEnd);
+  const filled = new Set();
+  for (const r of PLAN_ROWS) {
+    if (!r.meal_date) continue;
+    if (r.meal_date >= planStartKey && r.meal_date < planEndKey) filled.add(r.meal_date);
+  }
+
+  // Empty days in window
+  const empties = [];
+  for (let d = new Date(planStart); d < planEnd; d = dateAddDays(d, 1)) {
+    if (!filled.has(getDateKey(d))) empties.push(new Date(d));
+  }
+  if (empties.length === 0) return { inserted: 0 };
+
+  // Last-seen by recipe id, derived from existing plan rows
+  const lastSeen = {};
+  for (const r of PLAN_ROWS) {
+    if (!r.recipe_id || !r.meal_date) continue;
+    const t = new Date(r.meal_date + 'T00:00:00').getTime();
+    if (!lastSeen[r.recipe_id] || t > lastSeen[r.recipe_id]) lastSeen[r.recipe_id] = t;
+  }
+
+  const pool = Object.values(RECIPES_BY_ID).filter(r => r.active !== false && isMainDish(r));
+  if (pool.length === 0) return { inserted: 0 };
+
+  const COOLDOWN_MS = 7 * 86400000;
+  const inserts = [];
+  for (const slot of empties) {
+    const slotMs = slot.getTime();
+    const sortByOldest = (a,b) => {
+      const la = lastSeen[a.id] || 0, lb = lastSeen[b.id] || 0;
+      return la - lb || a.id - b.id;
+    };
+    const eligible = pool
+      .filter(r => !lastSeen[r.id] || (slotMs - lastSeen[r.id]) >= COOLDOWN_MS)
+      .sort(sortByOldest);
+    const pick = eligible[0] || pool.slice().sort(sortByOldest)[0];
+    lastSeen[pick.id] = slotMs;
+    inserts.push({
+      week_of: getDateKey(startOfShopWeek(slot)),
+      day_of_week: DAY_NAMES[slot.getDay()],
+      recipe_id: pick.id,
+      recipe_title: pick.title,
+      meal_type: 'dinner',
+      status: 'planned',
+      edited_by_user: false,
+      carryover: false
+    });
+  }
+
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/hh_meal_plan`, {
+    method: 'POST',
+    headers: { ...REST_HEADERS, 'Content-Type': 'application/json', Prefer: 'return=representation' },
+    body: JSON.stringify(inserts)
+  });
+  if (!res.ok) {
+    const txt = await res.text().catch(() => '');
+    console.error('[steward] insert failed', res.status, txt);
+    return { inserted: 0, error: true };
+  }
+  const newRows = await res.json();
+  PLAN_ROWS.push(...newRows);
+  console.log('[steward] inserted', newRows.length, 'plan rows over', STEWARD_PLAN_WEEKS, 'shop weeks');
+  return { inserted: newRows.length };
 }
 
 function formatTime(prep, cook) {
@@ -2143,6 +2232,8 @@ function buildMeal(date, row, source) {
     isLeftover: tags.includes('leftover'),
     veggie: row.side || row.side_dish || '',
     note: row.notes || '',
+    carryover: !!row.carryover,
+    editedByUser: !!row.edited_by_user,
     recipe
   };
 }
@@ -2246,21 +2337,27 @@ function renderCalendar() {
 function renderRotation() {
   const grid = document.getElementById('rotation-grid');
   const colors = ['#C4622D','#3A6B4A','#8B6914','#4A5568'];
-  grid.innerHTML = [1,2,3,4].map((wk, i) => {
-    const days = TEMPLATE_BY_WEEK[wk] || [];
+  const weekStart = startOfShopWeek(new Date());
+  grid.innerHTML = [0,1,2,3].map(i => {
+    const wkStart = dateAddDays(weekStart, i*7);
+    const wkEnd = dateAddDays(wkStart, 6);
+    const days = dateRangeDays(wkStart, 7);
+    const headerLabel = (i === 0 ? 'This Week' : 'Week ' + (i+1)) + ' · ' + fmtMonDay(wkStart) + '–' + fmtMonDay(wkEnd);
     return `
       <div class="rotation-week">
-        <div class="rotation-week-header" style="background:${colors[i]}">📅 Week ${wk}</div>
+        <div class="rotation-week-header" style="background:${colors[i]}">📅 ${headerLabel}</div>
         ${days.map(d => {
-          const recipe = RECIPES_BY_ID[d.recipe_id];
-          const emoji = recipe ? recipeMeta(recipe.tags).emoji : '🍽️';
-          const dn = (d.day_of_week || '').toLowerCase();
-          const dayLabel = dn.charAt(0).toUpperCase() + dn.slice(1, 3);
+          const meal = mealForDate(d);
+          const dayAbbrev = DAY_ABBREVS[d.getDay()];
+          const emoji = meal ? meal.emoji : '📅';
+          const name = meal ? meal.name : '—';
+          const carryoverTag = meal && meal.carryover ? ' <span style="color:#1E40AF;font-weight:600">⏭</span>' : '';
+          const onclick = meal ? `onclick="openRecipeModal('${meal.recipeKey}')"` : '';
           return `
-            <div class="rotation-meal-row">
-              <span class="rotation-day-label">${dayLabel}</span>
+            <div class="rotation-meal-row" ${onclick} style="${meal ? 'cursor:pointer' : ''}">
+              <span class="rotation-day-label">${dayAbbrev}</span>
               <span class="rotation-emoji">${emoji}</span>
-              <span class="rotation-meal-name">${d.recipe_title || ''}</span>
+              <span class="rotation-meal-name">${name}${carryoverTag}</span>
             </div>`;
         }).join('')}
       </div>`;
@@ -2277,6 +2374,7 @@ function groceryListByStore() {
   for (const d of days) {
     const meal = mealForDate(d);
     if (!meal || !meal.recipe) continue;
+    if (meal.carryover) continue;  // skipped → already shopped for last week
     for (const ing of (meal.recipe.ingredients || [])) {
       const store = (ing.store || 'any').toLowerCase();
       (byStore[store] = byStore[store] || []).push({
@@ -2517,16 +2615,10 @@ function saveSkipData(data) {
   localStorage.setItem('hh_skips', JSON.stringify(data));
 }
 
-// Skipped 28 days ago + same recipe = "carried over" badge
+// "Carried over" badge: read directly from the DB carryover flag set by hh_skip_meal.
 function getCarriedOver(date, recipeId) {
-  const skips = getSkipData();
-  const prevDate = new Date(date.getTime() - 28 * 86400000);
-  const prevKey = getDateKey(prevDate);
-  if (skips[prevKey] && skips[prevKey].skipped) {
-    const prevMeal = mealForDate(prevDate);
-    if (prevMeal && prevMeal.recipeId === recipeId) return true;
-  }
-  return false;
+  const meal = mealForDate(date);
+  return !!(meal && meal.recipeId === recipeId && meal.carryover);
 }
 
 // Prep-ahead detection: check tomorrow's note for prep keywords
@@ -2673,6 +2765,12 @@ function findNextOpenSlot(afterDate, excludeRowId) {
   return null;
 }
 
+async function reloadPlanRows() {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/hh_meal_plan?select=*&order=week_of`, { headers: REST_HEADERS });
+  if (!res.ok) throw new Error('reload plan rows failed: ' + res.status);
+  PLAN_ROWS = await res.json();
+}
+
 async function toggleSkip() {
   const now = new Date();
   const viewDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + dayOffset);
@@ -2683,61 +2781,73 @@ async function toggleSkip() {
   const setBusy = b => { if (skipBtn) skipBtn.disabled = b; if (undoBtn) undoBtn.disabled = b; };
 
   if (skips[dateKey]?.skipped) {
-    // UNDO: restore the row to its original date
+    // UNDO: call the unskip RPC. Works cleanly only if no other skip has cascaded
+    // since this one (i.e., the carryover row is still at next_week_sat).
     const s = skips[dateKey];
-    if (s.movedRowId && s.originalWeekOf && s.originalDayOfWeek) {
-      try {
-        setBusy(true);
-        const updated = await patchPlanRow(s.movedRowId, {
-          week_of: s.originalWeekOf,
-          day_of_week: s.originalDayOfWeek
-        });
-        const row = PLAN_ROWS.find(r => r.id === s.movedRowId);
-        if (row) Object.assign(row, updated);
-      } catch (e) {
-        alert('Failed to undo: ' + e.message);
-        setBusy(false);
-        return;
-      }
+    if (!s.movedRecipeId) {
+      delete skips[dateKey];
+      saveSkipData(skips);
+      renderToday();
+      return;
+    }
+    try {
+      setBusy(true);
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/hh_unskip_meal`, {
+        method: 'POST',
+        headers: { ...REST_HEADERS, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ p_skip_date: dateKey, p_recipe_id: s.movedRecipeId })
+      });
+      if (!res.ok) throw new Error('unskip failed: ' + res.status);
+      const result = await res.json();
+      if (result.error) throw new Error(result.error + ' (only the most recent skip can be undone)');
+      await reloadPlanRows();
+      delete skips[dateKey];
+      saveSkipData(skips);
+    } catch (e) {
+      alert('Failed to undo skip: ' + e.message);
       setBusy(false);
+      return;
     }
-    delete skips[dateKey];
-    saveSkipData(skips);
+    setBusy(false);
   } else {
-    // SKIP: push the planned meal forward to the next open slot
+    // SKIP: cascade via RPC
     const planRow = PLAN_ROWS.find(r => r.meal_date === dateKey);
-    const skipEntry = { skipped: true, reason: '' };
-    if (planRow) {
-      const next = findNextOpenSlot(viewDate, planRow.id);
-      if (next) {
-        try {
-          setBusy(true);
-          const newDateKey = getDateKey(next);
-          const newDayName = DAY_NAMES[next.getDay()];
-          const updated = await patchPlanRow(planRow.id, {
-            week_of: newDateKey,
-            day_of_week: newDayName
-          });
-          skipEntry.movedRowId = planRow.id;
-          skipEntry.movedTo = newDateKey;
-          skipEntry.movedRecipeId = planRow.recipe_id;
-          skipEntry.movedRecipeTitle = planRow.recipe_title;
-          skipEntry.originalWeekOf = planRow.week_of;
-          skipEntry.originalDayOfWeek = planRow.day_of_week;
-          Object.assign(planRow, updated);
-        } catch (e) {
-          alert('Failed to push meal forward: ' + e.message);
-          setBusy(false);
-          return;
-        }
-        setBusy(false);
-      }
+    if (!planRow) {
+      // Template-fallback day (no DB row): just mark skipped locally
+      skips[dateKey] = { skipped: true, reason: '' };
+      saveSkipData(skips);
+      renderToday();
+      return;
     }
-    skips[dateKey] = skipEntry;
-    saveSkipData(skips);
+    try {
+      setBusy(true);
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/hh_skip_meal`, {
+        method: 'POST',
+        headers: { ...REST_HEADERS, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ p_skip_date: dateKey })
+      });
+      if (!res.ok) throw new Error('skip failed: ' + res.status);
+      const result = await res.json();
+      if (result.error) throw new Error(result.error);
+      await reloadPlanRows();
+      skips[dateKey] = {
+        skipped: true,
+        reason: '',
+        movedRecipeId: result.recipe_id,
+        movedRecipeTitle: result.recipe_title,
+        movedTo: result.next_week_sat
+      };
+      saveSkipData(skips);
+    } catch (e) {
+      alert('Failed to skip meal: ' + e.message);
+      setBusy(false);
+      return;
+    }
+    setBusy(false);
   }
   renderToday();
   renderCalendar();
+  renderRotation();
   renderShopping();
 }
 
@@ -2771,6 +2881,7 @@ function showError(message) {
   showLoading();
   try {
     await loadData();
+    await runSteward();
     loadCheckedItemsForWeek();
     renderToday();
     renderCalendar();
