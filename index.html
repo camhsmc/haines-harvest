@@ -269,6 +269,17 @@
     margin-bottom: 6px;
   }
 
+  .shopping-badge {
+    font-size: 0.7rem;
+    background: #DBEAFE;
+    color: #1E40AF;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+    display: inline-block;
+    margin-bottom: 6px;
+  }
+
   /* ─── 4-WEEK ROTATION ─── */
   .rotation-grid {
     display: grid;
@@ -542,6 +553,7 @@
   .tag-time { background: #FEF3C7; color: #92400E; }
   .tag-tool { background: var(--green-pale); color: var(--green); }
   .tag-hit { background: #FEE2E2; color: #991B1B; }
+  .tag-serves { background: #E0E7FF; color: #3730A3; }
 
   .recipe-desc {
     font-size: 0.82rem;
@@ -757,6 +769,54 @@
     transform: translateX(18px);
   }
 
+  /* ─── GROCERY WEEK NAV ─── */
+  .grocery-week-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .grocery-week-btn {
+    background: white;
+    border: 2px solid var(--border);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
+    cursor: pointer;
+    color: var(--ink);
+    transition: background 0.15s;
+  }
+
+  .grocery-week-btn:hover {
+    background: var(--cream);
+  }
+
+  .grocery-week-label {
+    font-weight: 600;
+    font-size: 1.05rem;
+    color: var(--ink);
+    min-width: 150px;
+    text-align: center;
+  }
+
+  .grocery-week-today {
+    background: var(--cream);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    color: var(--ink);
+  }
+
+  .grocery-week-today:hover {
+    background: white;
+  }
+
   /* ─── PRINT BUTTON ─── */
   .print-bar {
     display: flex;
@@ -818,7 +878,7 @@
 
     header, nav, .view:not(.active), .week-selector,
     .print-bar, .page-header, .clear-btn,
-    .footer-strip, .modal-overlay {
+    .footer-strip, .modal-overlay, .grocery-week-nav {
       display: none !important;
     }
 
@@ -1430,7 +1490,14 @@
   <div id="view-shopping" class="view">
     <div class="page-header">
       <h2>Grocery List</h2>
-      <p>Auto-derived from this week's meal plan, organized by store. Check off items as you shop.</p>
+      <p>Saturday → Friday shopping week. Auto-derived from the meal plan, organized by store. Check off items as you shop.</p>
+    </div>
+
+    <div class="grocery-week-nav">
+      <button class="grocery-week-btn" onclick="shiftGroceryWeek(-1)" aria-label="Previous week">◀</button>
+      <span class="grocery-week-label" id="grocery-week-label"></span>
+      <button class="grocery-week-btn" onclick="shiftGroceryWeek(1)" aria-label="Next week">▶</button>
+      <button class="grocery-week-today" id="grocery-week-today" onclick="resetGroceryWeek()">This week</button>
     </div>
 
     <div class="print-bar">
@@ -1711,6 +1778,7 @@ function adaptRecipe(r) {
     tool: meta.tool,
     isHit: tags.includes('kid_favorite'),
     isLeftover: tags.includes('leftover'),
+    servings: r.servings,
     desc: r.notes || '',
     ingredients: (r.ingredients || []).map(formatIngredient),
     steps: (r.steps || []).map(s => typeof s === 'string' ? s : (s.instruction || s.text || '')),
@@ -2083,6 +2151,35 @@ function buildMeal(date, row, source) {
 // STATE
 // ═══════════════════════════════════════
 let checkedItems = {};
+let groceryWeekOffset = 0;  // 0 = current shopping week (Sat–Fri), ±N for prev/next weeks
+
+// Cam shops Saturdays. A "shopping week" runs Saturday through the following Friday.
+function startOfShopWeek(date) {
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const back = (d.getDay() + 1) % 7;  // Sat=0 days back, Sun=1, ..., Fri=6
+  d.setDate(d.getDate() - back);
+  return d;
+}
+
+function groceryWeekStart() {
+  return dateAddDays(startOfShopWeek(new Date()), groceryWeekOffset * 7);
+}
+
+function loadCheckedItemsForWeek() {
+  const key = getDateKey(groceryWeekStart());
+  try {
+    const all = JSON.parse(localStorage.getItem('hh_grocery_checks') || '{}');
+    checkedItems = all[key] || {};
+  } catch { checkedItems = {}; }
+}
+
+function saveCheckedItemsForWeek() {
+  const key = getDateKey(groceryWeekStart());
+  let all = {};
+  try { all = JSON.parse(localStorage.getItem('hh_grocery_checks') || '{}'); } catch {}
+  all[key] = checkedItems;
+  localStorage.setItem('hh_grocery_checks', JSON.stringify(all));
+}
 
 // ═══════════════════════════════════════
 // NAVIGATION
@@ -2111,6 +2208,8 @@ function renderCalendar() {
     const meal = mealForDate(d);
     const dayAbbrev = DAY_ABBREVS[d.getDay()];
     const dayLabel = dayAbbrev + ' ' + (d.getMonth()+1) + '/' + d.getDate();
+    const isShoppingDay = d.getDay() === 6;  // Saturday
+    const shoppingBadge = isShoppingDay ? '<span class="shopping-badge">🛒 Grocery Shopping Day</span>' : '';
     if (!meal) {
       return `
         <div class="day-card">
@@ -2118,6 +2217,7 @@ function renderCalendar() {
             <div class="day-name">${dayLabel}</div>
           </div>
           <div class="day-body">
+            ${shoppingBadge}
             <span class="meal-emoji">📅</span>
             <div class="meal-name">No meal planned</div>
           </div>
@@ -2130,6 +2230,7 @@ function renderCalendar() {
         </div>
         <div class="day-body">
           <span class="meal-emoji">${meal.emoji}</span>
+          ${shoppingBadge}
           ${meal.isLeftover ? '<span class="leftover-badge">♻️ Leftover Remix</span>' : ''}
           <div class="meal-name">${meal.name}</div>
           ${meal.veggie ? `<span class="meal-veggie">🥦 ${meal.veggie}</span>` : ''}
@@ -2167,11 +2268,10 @@ function renderRotation() {
 }
 
 // ═══════════════════════════════════════
-// GROCERY LIST (current 7 days, derived from plan + recipe ingredients)
+// GROCERY LIST (Sat–Fri shopping week, anchored to Cam's Saturday shop trip)
 // ═══════════════════════════════════════
 function groceryListByStore() {
-  const today = new Date();
-  const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const start = groceryWeekStart();
   const days = dateRangeDays(start, 7);
   const byStore = {};
   for (const d of days) {
@@ -2192,8 +2292,7 @@ function groceryListByStore() {
 }
 
 function updatePrintHeader() {
-  const today = new Date();
-  const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const start = groceryWeekStart();
   const end = dateAddDays(start, 6);
   const numEl = document.getElementById('print-week-num');
   const chips = document.getElementById('print-meal-chips');
@@ -2215,6 +2314,15 @@ function printList() {
 }
 
 function renderShopping() {
+  const start = groceryWeekStart();
+  const end = dateAddDays(start, 6);
+  const labelEl = document.getElementById('grocery-week-label');
+  const todayBtn = document.getElementById('grocery-week-today');
+  if (labelEl) {
+    const yearSuffix = start.getFullYear() !== new Date().getFullYear() ? ', ' + start.getFullYear() : '';
+    labelEl.textContent = fmtMonDay(start) + ' – ' + fmtMonDay(end) + yearSuffix;
+  }
+  if (todayBtn) todayBtn.style.display = groceryWeekOffset === 0 ? 'none' : '';
   const layout = document.getElementById('shopping-layout');
   const byStoreRaw = groceryListByStore();
   const byStore = {};
@@ -2273,12 +2381,26 @@ function toggleItem(id) {
   checkedItems[id] = !checkedItems[id];
   const el = document.getElementById('item-' + id);
   if (el) el.classList.toggle('checked', checkedItems[id]);
+  saveCheckedItemsForWeek();
 }
 
 function clearStore(storeKey) {
   Object.keys(checkedItems).forEach(k => {
     if (k.startsWith(storeKey)) checkedItems[k] = false;
   });
+  saveCheckedItemsForWeek();
+  renderShopping();
+}
+
+function shiftGroceryWeek(delta) {
+  groceryWeekOffset += delta;
+  loadCheckedItemsForWeek();
+  renderShopping();
+}
+
+function resetGroceryWeek() {
+  groceryWeekOffset = 0;
+  loadCheckedItemsForWeek();
   renderShopping();
 }
 
@@ -2320,6 +2442,7 @@ function openRecipeModal(key) {
     <div class="recipe-meta" style="margin-bottom:12px">
       <span class="recipe-tag tag-time">⏱ ${r.time}</span>
       <span class="recipe-tag tag-tool">🔧 ${r.tool}</span>
+      ${r.servings ? `<span class="recipe-tag tag-serves">🍽 Serves ${r.servings}</span>` : ''}
       ${r.isHit ? '<span class="recipe-tag tag-hit">⭐ Family Fave</span>' : ''}
     </div>
     <div class="modal-section">
@@ -2648,6 +2771,7 @@ function showError(message) {
   showLoading();
   try {
     await loadData();
+    loadCheckedItemsForWeek();
     renderToday();
     renderCalendar();
     renderRotation();
