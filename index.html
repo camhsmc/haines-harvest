@@ -1631,7 +1631,34 @@ const GRAMS_PER_UNIT = [
   { match: /yogurt/,                                                                  perCup: 245, perTbsp: 15, perTsp: 5 },
   { match: /^(heavy |whipping )?cream$/,                                              perCup: 240, perTbsp: 15, perTsp: 5 },
   { match: /cream cheese/,                                                            perCup: 240, perTbsp: 15, perTsp: 5 },
-  { match: /garlic/,                                                                  perClove: 3 }
+  { match: /garlic/,                                                                  perClove: 3 },
+  // Grains / pasta / panko (typically used by cup or oz; oz auto-converts via the universal fallback)
+  { match: /^(jasmine |white |brown |basmati |day-old (cooked )?)?rice$/,              perCup: 185, perTbsp: 12, perTsp: 4 },
+  { match: /penne|rigatoni|ziti|spaghetti|fettuccine|linguine|orzo|macaroni|^pasta$/,  perCup: 100, perTbsp: 6 },
+  { match: /panko|breadcrumb/,                                                        perCup: 60,  perTbsp: 4 },
+  // Nuts
+  { match: /walnut/,                                                                  perCup: 110, perTbsp: 7,  perTsp: 2 },
+  { match: /almond/,                                                                  perCup: 140, perTbsp: 9,  perTsp: 3 },
+  { match: /pecan/,                                                                   perCup: 110, perTbsp: 7,  perTsp: 2 },
+  { match: /pine nut/,                                                                perCup: 135, perTbsp: 8,  perTsp: 3 },
+  { match: /cashew/,                                                                  perCup: 130, perTbsp: 8,  perTsp: 3 },
+  // Cheeses (the 4 named in scope + a couple frequent guests)
+  { match: /^parmesan$/,                                                              perCup: 100, perTbsp: 6,  perTsp: 2 },
+  { match: /shredded (mozzarella|cheese|cheddar)|^mozzarella$/,                       perCup: 113, perTbsp: 7,  perTsp: 2 },
+  { match: /feta/,                                                                    perCup: 150, perTbsp: 9,  perTsp: 3 },
+  { match: /blue cheese/,                                                             perCup: 135, perTbsp: 8,  perTsp: 3 },
+  { match: /ricotta/,                                                                 perCup: 245, perTbsp: 15, perTsp: 5 },
+  { match: /cottage cheese/,                                                          perCup: 225, perTbsp: 14, perTsp: 5 },
+  // Fresh herbs (chopped) — Cam wants these because eye-estimating a tbsp of herbs is hard
+  { match: /(fresh )?basil/,                                                          perCup: 25,  perTbsp: 2,  perTsp: 1 },
+  { match: /cilantro/,                                                                perCup: 16,  perTbsp: 1,  perTsp: 1 },
+  { match: /(fresh )?parsley/,                                                        perCup: 60,  perTbsp: 4,  perTsp: 1 },
+  { match: /(fresh )?thyme/,                                                          perCup: 50,  perTbsp: 3,  perTsp: 1 },
+  { match: /(fresh )?oregano/,                                                        perCup: 50,  perTbsp: 3,  perTsp: 1 },
+  { match: /(fresh )?mint/,                                                           perCup: 30,  perTbsp: 2,  perTsp: 1 },
+  { match: /(fresh )?dill/,                                                           perCup: 50,  perTbsp: 3,  perTsp: 1 },
+  { match: /chive/,                                                                   perCup: 50,  perTbsp: 3,  perTsp: 1 },
+  { match: /green onions?( or chives?)?|scallion/,                                    perCup: 100, perTbsp: 6,  perTsp: 2 }
 ];
 
 function gramsForIngredient(name, amount, unit) {
@@ -1646,6 +1673,9 @@ function gramsForIngredient(name, amount, unit) {
     if (u === 'tsp'   && r.perTsp)   return Math.round(a * r.perTsp);
     if (u === 'clove' && r.perClove) return Math.round(a * r.perClove);
   }
+  // Universal weight conversion — applies to any ingredient measured by oz or lb.
+  if (u === 'oz') return Math.round(a * 28.35);
+  if (u === 'lb') return Math.round(a * 454);
   return null;
 }
 
