@@ -1920,13 +1920,17 @@ const NAME_ALIASES = [
   { canonical: 'shredded mozzarella', patterns: [/shredded mozzarella/] },
   { canonical: 'shredded cheese',     patterns: [/shredded cheese( blend)?|shredded cheddar/] },
   { canonical: 'green onions',        patterns: [/green onions?( or chives?)?|scallions?|chives?/] },
-  { canonical: 'garlic',              patterns: [/^(frozen )?garlic( cubes?)?( or (fresh )?minced cloves?)?$/, /^garlic$/] },
+  { canonical: 'garlic',              patterns: [/^(frozen )?garlic( cubes?| cloves?)?( or (fresh )?(minced )?cloves?)?$/, /^garlic$/] },
   { canonical: 'arugula',             patterns: [/arugula( or simple greens?)?/] },
-  { canonical: 'red onion',           patterns: [/red.*onion|red or yellow onion|yellow onion/] },
+  { canonical: 'red onion',           patterns: [/^red onions?$/] },
+  { canonical: 'onion',               patterns: [/^(small |medium |large )?(yellow |red or yellow )?(chopped )?onions?$/] },
   { canonical: 'cucumber',            patterns: [/cucumber/] },
   { canonical: 'cilantro',            patterns: [/^cilantro$/] },
   { canonical: 'fresh parsley',       patterns: [/parsley/] },
-  { canonical: 'lemon',               patterns: [/^lemon( zest and juice)?$|lemon$|lemon juice|lemon zest/] }
+  { canonical: 'lemon',               patterns: [/^lemon( zest and juice)?$|lemon$|lemon juice|lemon zest/] },
+  { canonical: 'olive oil',           patterns: [/^(extra virgin )?olive oil$/] },
+  { canonical: 'ground beef',         patterns: [/^(lean |extra lean )?ground beef$/] },
+  { canonical: 'chicken thighs',      patterns: [/^(boneless skinless )?chicken thighs$/] }
 ];
 
 function canonicalName(name) {
@@ -2234,6 +2238,7 @@ function buildMeal(date, row, source) {
     note: row.notes || '',
     carryover: !!row.carryover,
     editedByUser: !!row.edited_by_user,
+    excludedIngredients: row.excluded_ingredients || [],
     recipe
   };
 }
@@ -2375,7 +2380,9 @@ function groceryListByStore() {
     const meal = mealForDate(d);
     if (!meal || !meal.recipe) continue;
     if (meal.carryover) continue;  // skipped → already shopped for last week
+    const excludedSet = new Set((meal.excludedIngredients || []).map(canonicalName));
     for (const ing of (meal.recipe.ingredients || [])) {
+      if (excludedSet.has(canonicalName(ing.name))) continue;  // reusing leftovers
       const store = (ing.store || 'any').toLowerCase();
       (byStore[store] = byStore[store] || []).push({
         name: ing.name,
