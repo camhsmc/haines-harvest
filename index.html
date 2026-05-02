@@ -2269,6 +2269,7 @@ function buildMeal(date, row, source) {
     carryover: !!row.carryover,
     editedByUser: !!row.edited_by_user,
     excludedIngredients: row.excluded_ingredients || [],
+    extraIngredients: row.extra_ingredients || [],
     recipe
   };
 }
@@ -2419,6 +2420,17 @@ function groceryListByStore() {
         amount: ing.amount,
         unit: ing.unit,
         recipeName: meal.recipe.title,
+        day: DAY_ABBREVS[d.getDay()]
+      });
+    }
+    // Ad-hoc extras attached to this plan row (e.g., milk, eggs that aren't in any recipe).
+    for (const ing of (meal.extraIngredients || [])) {
+      const store = (ing.store || 'any').toLowerCase();
+      (byStore[store] = byStore[store] || []).push({
+        name: ing.name,
+        amount: ing.amount,
+        unit: ing.unit,
+        recipeName: 'Weekly Extras',
         day: DAY_ABBREVS[d.getDay()]
       });
     }
