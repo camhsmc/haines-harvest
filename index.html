@@ -2090,8 +2090,69 @@ const PACK_SIZES = [
   { match: ['onion','red onion','yellow onion'],                     unit: '*',    pack: '1 each',            per: 1 },
   { match: ['bell pepper'],                                          unit: '*',    pack: '1 each',            per: 1 },
   // Spices — 1 jar typically covers many recipes
-  { match: ['cumin','chili powder','paprika','italian seasoning','onion powder','garlic powder','ginger','thyme','red pepper flakes','smoked paprika'],
-    unit: '*', pack: '1 jar', per: 999 }
+  { match: ['cumin','chili powder','paprika','italian seasoning','onion powder','garlic powder','ginger','thyme','red pepper flakes','smoked paprika',
+            'oregano','cayenne','bay leaves','celery seed','seasoned salt','montreal steak seasoning','dried italian herb seasoning','kosher salt'],
+    unit: '*', pack: '1 jar', per: 999 },
+  // Proteins — Costco is sold by weight; let raw lb display naturally for chicken/beef/steak/sausage.
+  // Pack rules only for items sold in fixed packages.
+  { match: ['bacon'],                                                unit: 'slice', pack: '1 package',         per: 12 },
+  { match: ['prosciutto'],                                           unit: 'oz',    pack: '1 4 oz package',    per: 4 },
+  { match: ['frozen meatballs'],                                     unit: 'piece', pack: '1 bag',             per: 50 },
+  { match: ['rotisserie chicken'],                                   unit: 'cup',   pack: '1 chicken',         per: 3 },
+  // Dairy supplements
+  { match: ['milk'],                                                 unit: 'cup',   pack: '1 gallon',          per: 16 },
+  { match: ['greek yogurt','plain greek yogurt'],                    unit: 'cup',   pack: '1 32 oz tub',       per: 4 },
+  { match: ['feta','crumbled reduced fat feta'],                     unit: 'g',     pack: '1 6 oz container',  per: 170 },
+  { match: ['feta','crumbled reduced fat feta'],                     unit: 'oz',    pack: '1 6 oz container',  per: 6 },
+  { match: ['blue cheese'],                                          unit: 'tbsp',  pack: '1 4 oz container',  per: 16 },
+  { match: ['provolone'],                                            unit: 'slice', pack: '1 package',         per: 8 },
+  { match: ['muenster'],                                             unit: 'slice', pack: '1 package',         per: 8 },
+  { match: ['cottage cheese'],                                       unit: 'cup',   pack: '1 24 oz tub',       per: 3 },
+  // Produce — most are bought whole (zucchini, avocado, etc.); raw count display reads
+  // cleaner than "N × 1 each". Rules only for items measured by cup/volume that need rounding.
+  { match: ['peach'],                                                unit: 'cup',   pack: '1 each',            per: 0.75 },
+  // Produce by volume → bagged
+  { match: ['mixed greens','shredded lettuce','spinach','kale'],     unit: 'cup',   pack: '1 bag',             per: 5 },
+  { match: ['strawberries'],                                         unit: 'cup',   pack: '1 lb container',    per: 3 },
+  { match: ['fresh corn','corn kernels'],                            unit: 'cup',   pack: '1 each (ear)',      per: 0.75 },
+  { match: ['green beans'],                                          unit: 'lb',    pack: '1 lb bag',          per: 1 },
+  // Herbs (fresh) — 1 bunch covers a recipe
+  { match: ['fresh mint','mint'],                                    unit: 'tbsp',  pack: '1 bunch',           per: 999 },
+  { match: ['fresh dill','dill'],                                    unit: 'tbsp',  pack: '1 bunch',           per: 999 },
+  // Pantry oils, sauces, condiments — additions
+  { match: ['canola oil'],                                           unit: 'tbsp',  pack: '1 bottle',          per: 64 },
+  { match: ['white balsamic vinegar'],                               unit: 'tbsp',  pack: '1 bottle',          per: 32 },
+  { match: ['red wine vinegar'],                                     unit: 'tbsp',  pack: '1 bottle',          per: 32 },
+  { match: ['red wine vinegar'],                                     unit: 'g',     pack: '1 bottle',          per: 480 },
+  { match: ['rice vinegar'],                                         unit: 'cup',   pack: '1 bottle',          per: 2 },
+  { match: ['white wine','dry white wine'],                          unit: 'cup',   pack: '1 bottle',          per: 3 },
+  { match: ['champagne wine vinegar','champagne vinegar'],           unit: 'tbsp',  pack: '1 bottle',          per: 32 },
+  { match: ['barbecue sauce','bbq sauce'],                           unit: 'cup',   pack: '1 bottle',          per: 2.25 },
+  { match: ['ranch dressing'],                                       unit: '*',     pack: '1 bottle',          per: 1 },
+  // Canned items not covered by tomato/beans
+  { match: ['tomato paste'],                                         unit: 'can',   pack: '1 can',             per: 1 },
+  { match: ['tomato paste'],                                         unit: 'tbsp',  pack: '1 6 oz can',        per: 12 },
+  { match: ['tomato sauce'],                                         unit: 'can',   pack: '1 can',             per: 1 },
+  { match: ['coconut milk'],                                         unit: 'cup',   pack: '1 can',             per: 1.7 },
+  { match: ['chipotle','chipotle chile','chipotle chiles in adobo'], unit: '*',     pack: '1 can',             per: 7 },
+  { match: ['adobo sauce'],                                          unit: 'tbsp',  pack: '1 can',             per: 4 },
+  { match: ['rotel','fire-roasted tomatoes'],                        unit: 'g',     pack: '1 can',             per: 411 },
+  { match: ['roasted red peppers'],                                  unit: 'g',     pack: '1 12 oz jar',       per: 340 },
+  // Nuts & seeds
+  { match: ['roasted salted almonds','almonds'],                     unit: 'g',     pack: '1 lb bag',          per: 454 },
+  { match: ['toasted walnuts','walnuts'],                            unit: 'tbsp',  pack: '1 8 oz bag',        per: 32 },
+  { match: ['sesame seeds'],                                         unit: '*',     pack: '1 jar',             per: 999 },
+  // Sweeteners, baking, dry goods
+  { match: ['brown sugar'],                                          unit: 'cup',   pack: '1 bag',             per: 4.5 },
+  { match: ['brown sugar','granulated sugar','sugar'],               unit: 'tbsp',  pack: '1 bag',             per: 999 },
+  { match: ['brown sugar','granulated sugar','sugar'],               unit: 'tsp',   pack: '1 bag',             per: 999 },
+  { match: ['granulated sugar'],                                     unit: 'cup',   pack: '1 bag',             per: 9 },
+  { match: ['all-purpose flour','flour'],                            unit: 'cup',   pack: '1 5 lb bag',        per: 17 },
+  { match: ['all-purpose flour','flour'],                            unit: 'tbsp',  pack: '1 5 lb bag',        per: 999 },
+  { match: ['cornstarch'],                                           unit: 'tbsp',  pack: '1 box',             per: 32 },
+  // Bread/buns/crusts
+  { match: ['burger bun','hoagie roll','hot dog bun'],               unit: '*',     pack: '1 pack',            per: 8 },
+  { match: ['unbaked 9-inch pie crust','pie crust'],                 unit: '*',     pack: '1 box',             per: 2 }
 ];
 
 function findPackSize(name, unit) {
