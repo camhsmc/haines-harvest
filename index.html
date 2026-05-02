@@ -1112,6 +1112,33 @@
 
   .today-recipe-btn:active { transform: scale(0.97); }
 
+  .today-card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 4px;
+  }
+
+  .today-log-btn {
+    background: var(--gold);
+    color: white;
+    border: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 12px 24px;
+    border-radius: 24px;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 3px 10px rgba(139,105,20,0.25);
+  }
+
+  .today-log-btn:active { transform: scale(0.97); }
+  .today-log-btn:disabled { cursor: default; opacity: 0.85; box-shadow: none; }
+  .today-log-btn.logged { background: var(--green); }
+  .today-log-btn.logging { opacity: 0.7; cursor: wait; }
+
   .today-prep {
     background: #FDF6E3;
     border: 2px solid var(--gold);
@@ -1429,7 +1456,10 @@
       <div class="today-veggie" id="todayVeggie"></div>
       <div class="today-note" id="todayNote"></div>
       <div class="today-tags" id="todayTags"></div>
-      <button class="today-recipe-btn" id="todayRecipeBtn" onclick="openTodayRecipe()">View Full Recipe</button>
+      <div class="today-card-actions">
+        <button class="today-recipe-btn" id="todayRecipeBtn" onclick="openTodayRecipe()">View Full Recipe</button>
+        <button class="today-log-btn" id="todayLogBtn" onclick="logTodayToFoodLog()">🍽 Log to Food Log</button>
+      </div>
     </div>
 
     <div class="today-prep" id="todayPrep" style="display:none">
@@ -2692,6 +2722,7 @@ function renderToday() {
     document.getElementById('todayNote').textContent = '';
     document.getElementById('todayTags').innerHTML = '';
     document.getElementById('todayRecipeBtn').style.display = 'none';
+    document.getElementById('todayLogBtn').style.display = 'none';
     card.classList.remove('skipped');
     skipSection.style.display = 'none';
     skippedBanner.style.display = 'none';
@@ -2735,6 +2766,87 @@ function renderToday() {
     document.getElementById('todayPrepText').textContent = 'Tomorrow: ' + prep.meal + ' — ' + prep.note;
   } else {
     prepEl.style.display = 'none';
+  }
+
+  updateLogButtonState(viewDate, meal, isSkipped);
+}
+
+// ─── Food Log integration ────────────────────────────────
+function getLoggedDinners() {
+  try { return JSON.parse(localStorage.getItem('hh_logged_dinners') || '{}'); } catch { return {}; }
+}
+function saveLoggedDinners(data) {
+  localStorage.setItem('hh_logged_dinners', JSON.stringify(data));
+}
+
+function updateLogButtonState(viewDate, meal, isSkipped) {
+  const btn = document.getElementById('todayLogBtn');
+  if (!btn) return;
+  const today = new Date();
+  const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const isFuture = viewDate.getTime() > todayMidnight.getTime();
+  const recipe = meal && meal.recipeId ? RECIPES_BY_ID[meal.recipeId] : null;
+  // Hide for: no meal, skipped, future date
+  if (!meal || isSkipped || isFuture) {
+    btn.style.display = 'none';
+    return;
+  }
+  btn.style.display = '';
+  const dateKey = getDateKey(viewDate);
+  const logged = getLoggedDinners()[dateKey];
+  btn.classList.remove('logging');
+  if (logged) {
+    btn.classList.add('logged');
+    btn.disabled = true;
+    btn.textContent = '✓ Logged to Food Log';
+  } else {
+    btn.classList.remove('logged');
+    btn.disabled = false;
+    btn.textContent = recipe && recipe.nutrition_per_serving ? '🍽 Log to Food Log' : '🍽 Log to Food Log (name only)';
+  }
+}
+
+async function logTodayToFoodLog() {
+  const now = new Date();
+  const viewDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + dayOffset);
+  const meal = mealForDate(viewDate);
+  if (!meal || !meal.recipeId) return;
+  const btn = document.getElementById('todayLogBtn');
+  btn.classList.add('logging');
+  btn.disabled = true;
+  const recipe = RECIPES_BY_ID[meal.recipeId];
+  const macros = (recipe && recipe.nutrition_per_serving) || {};
+  const dateKey = getDateKey(viewDate);
+  const payload = {
+    date: dateKey,
+    meal: 'dinner',
+    food_name: meal.name,
+    serving_size: '1 serving',
+    notes: 'Logged from Haines Harvest',
+    logged_at: new Date().toISOString(),
+    calories: macros.calories ?? null,
+    protein_g: macros.protein_g ?? null,
+    carbs_g: macros.carbs_g ?? null,
+    fat_g: macros.fat_g ?? null,
+    fiber_g: macros.fiber_g ?? null,
+    sugar_g: macros.sugar_g ?? null,
+    sodium_mg: macros.sodium_mg ?? null
+  };
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/food_log`, {
+      method: 'POST',
+      headers: { ...REST_HEADERS, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error('food_log insert ' + res.status);
+    const all = getLoggedDinners();
+    all[dateKey] = { recipeId: meal.recipeId, at: new Date().toISOString() };
+    saveLoggedDinners(all);
+    renderToday();
+  } catch (e) {
+    btn.classList.remove('logging');
+    btn.disabled = false;
+    alert('Failed to log to food log: ' + e.message);
   }
 }
 
