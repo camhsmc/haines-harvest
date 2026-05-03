@@ -144,3 +144,63 @@ Big build day. Three bundles in two commits.
 - (Carryover) Cerebro Note 173 (breakfast/lunch in grocery list) and Note 170 (sauces in grams primary).
 - (Carryover) Pack-size / aisle / gram lookup tables — add one-liners as new ingredients show up.
 - Skip undo only works for the most recent skip. If Cam wants multi-skip undo, we'd need a skip log table.
+
+---
+
+## 2026-05-02 — Week reshuffle, food-log button, grocery-list overhaul, pack-size sweep
+
+Big shopping-day session. Cam started with a meal swap, ended up touching schema, JS, and PACK_SIZES across the board.
+
+### What changed
+
+**Week reshuffle (DB-only — `hh_meal_plan`):**
+- Sat 5/2 originally had Greek Lemon Herb Chicken (bulk cook). Cam swapped to cheeseburgers. First insert had `recipe_id=NULL` and `recipe_title='Cheeseburgers'` — app fell back to the rotation template (Grilled Flank Steak) because `mealForDate()` gates plan rows on `recipe_id`. Re-pointed to `recipe_id=15` (Smash Burgers + Air Fryer Fries) and the row rendered correctly. Lesson saved as a feedback memory: **never insert `hh_meal_plan` without a `recipe_id`**.
+- Bulk cook moved Sat → Sun (id 8). Chicken Pot Pie moved Sun → Thu (id 4). Lasagna moved Thu 5/7 → Thu 5/14 (id 12). Fajitas (id 11) note updated to call out leftover Greek chicken usage. Cleaned up a duplicate Thu 5/14 row (steward had placed Crockpot Tortilla Soup there before the lasagna move; user-edit wins, deleted id 19).
+
+**Food-log integration (`hh_recipes` + `food_log` + JS):**
+- New `nutrition_per_serving jsonb` column on `hh_recipes`. Schema: `{calories, protein_g, carbs_g, fat_g, fiber_g, sugar_g, sodium_mg}` to match `food_log` columns.
+- One-time backfill via in-conversation inference (no Anthropic API key in `~/.secrets.md` — it's `PASTE_HERE` placeholder). All 37 recipes populated. Sauces/dressings (recipes 20/23/24) treated as 6 small accent servings.
+- New anon INSERT policy on `food_log` (was SELECT/UPDATE/DELETE only — Cam's Cave must use a different auth mode). `apikey:`-only header from the publishable key now writes.
+- New "🍽 Log to Food Log" button on Today card (gold pill, sits next to "View Full Recipe" inside a new `.today-card-actions` flex row). On tap: POSTs date/meal=`dinner`/food_name/serving_size=`1 serving`/macros from `nutrition_per_serving`/notes=`Logged from Haines Harvest`. Tracks logged state in `localStorage.hh_logged_dinners[dateKey]` so the button persistently shows "✓ Logged" until the date rolls. Hides for skipped meals, missing meals, and future dates. Recipes without `nutrition_per_serving` still log but the button label says `(name only)`.
+- Cam logged Smash Burgers via the button (id 108), then asked to delete it. Subsequent food entries (tortilla soup lunch, breakfast cereal/milk/eggs, string cheese snack) were logged manually via SQL — the button doesn't yet handle non-dinner meals or multi-serving counts.
+
+**Grocery list aggregation (NAME_ALIASES + groceryListByStore):**
+Cam called the list "not accurate." Punch list found:
+- **Yellow onion mistakenly canonicalized as "Red Onion"** — line 1925 `/yellow onion/` was lumped into the red onion alias, so Goulash's 2 yellow onions appeared as "Red Onion ×2" on Aldi. Split: red onion now `/^red onions?$/`, new `onion` canonical absorbs `(small|medium|large )?(yellow|red or yellow )?(chopped )?onions?`.
+- Olive oil + extra virgin olive oil → both alias to `olive oil`.
+- Ground beef + lean ground beef → both alias to `ground beef`.
+- Boneless skinless chicken thighs + chicken thighs → both alias to `chicken thighs`.
+- Garlic clove + garlic cloves → existing garlic alias regex extended to match `garlic( cubes?| cloves?)?`.
+
+**Leftover-aware grocery exclusion:**
+- New `excluded_ingredients text[]` column on `hh_meal_plan`. JS in `groceryListByStore` builds a Set of canonicalized exclusions per row and skips matching ingredients.
+- Mon (id 9, Honey Mustard Salad) and Wed (id 11, Fajitas) both set to `['chicken thighs']` — they reuse Sun's Greek bulk cook, so 1 + 1.5 lb of fresh chicken came off the shopping list (was 5 lb total, now 2.5 lb).
+
+**Ad-hoc grocery extras:**
+- New `extra_ingredients jsonb` column on `hh_meal_plan`. Same shape as recipe ingredients (`[{name, amount, unit, store}]`). `groceryListByStore` iterates them after recipe ingredients with `recipeName='Weekly Extras'`.
+- Six items attached to Sat row id 51 for the 5/2 week: milk, eggs, mayonnaise, apples, bread, peanut butter (all Aldi). Future additions: just PATCH the same row's `extra_ingredients`.
+
+**PACK_SIZES sweep (one-time inference for all 37 recipes):**
+- First pass fixed only cucumber (`unit:'cup'` → `'*'` so it catches count-based fractions), celery (1 bunch per 6 cups), carrots (1 lb bag per 3 cups) — Cam flagged "1/2 cup celery" + "1/2 cucumber" as unbuyable.
+- Then full sweep: bacon (slice→package), prosciutto (oz→4oz pkg), frozen meatballs, rotisserie chicken, milk (cup→gallon), Greek yogurt, feta (g/oz→6oz), blue cheese, provolone, muenster, cottage cheese (cup), strawberries, mixed greens, fresh corn, green beans, fresh mint/dill, canola oil, white balsamic / red wine / rice / champagne vinegars, white wine, BBQ sauce, ranch dressing, tomato paste (can + tbsp), tomato sauce, coconut milk, chipotle/adobo, Rotel, roasted red peppers, almonds/walnuts/sesame seeds, brown/granulated sugar, AP flour, cornstarch, burger buns, hoagie rolls, pie crusts, peach (cup). Spice list extended with oregano/cayenne/bay leaves/celery seed/seasoned salt/montreal steak seasoning/dried italian herb seasoning/kosher salt.
+- **Skipped on purpose:** chicken/beef/steak/sausage by `lb` (Costco sells by weight, raw display reads cleaner than "4 × 1 lb") and most produce by count (zucchini, avocado, sweet/russet potato, orange — already render as "3 large" or "1 each" naturally).
+
+### Forward-compat notes
+- `excluded_ingredients` is a per-row override — set it any time a recipe's ingredient list overstates what you actually need to buy that week (typically protein from a prior bulk cook).
+- `extra_ingredients` is also per-row but conceptually weekly. Convention: attach to the Saturday shop-day row. To add new items mid-week, PATCH that row's `extra_ingredients` array — no code change.
+- `nutrition_per_serving` is set once per recipe. Refresh if a recipe's ingredients change materially. New recipes added after this session will need a backfill (or a future automation).
+- Anon INSERT on `food_log` is now permitted from the publishable key. This expands write access on health data; was an explicit trade-off Cam approved (option 1 of three) for parity with the existing anon SELECT/UPDATE/DELETE policies.
+- The "Log to Food Log" button currently hardcodes `meal='dinner'` and `serving_size='1 serving'`. Cam queued a stepper UI (−/+ servings, 0.5 increments) for a follow-up — the macros multiplier just needs to thread through `logTodayToFoodLog`. Also queued: an "Undo Log" affordance that handles both DB delete and localStorage clear in one tap.
+
+### Status
+- All changes deployed to GitHub Pages. Commit chain on `main`: `f24d007` (grocery alias + exclusion) → `95bf7f2` (food-log button) → `fcba1c5` (extras column) → `c7361ba` (cucumber/celery/carrot pack rules) → `29f2b92` (full PACK_SIZES sweep).
+- Cam confirmed Sat card renders correctly post-recipe_id fix. Logged + deleted Smash Burgers via the button. Manual food-log entries (tortilla soup, breakfast trio, string cheese) inserted directly through SQL.
+- Pack-size sweep not yet validated against the live grocery list — Cam will refresh and call out any weird outputs.
+
+### Next / open
+- **Servings stepper** on the Log button (Cam asked, deferred to "later this session" then end of session).
+- **Undo Log** affordance (handles DB delete + localStorage clear).
+- **Lunch / breakfast / snack support** in the Log button (currently dinner-only). Manual SQL works for now.
+- Validate the bulk PACK_SIZES sweep — Cam to flag any line that still looks weird after the next refresh.
+- (Carryover) Vacation mode, recipe 19 reframing, breakfast/lunch in grocery list, sauces in grams primary, multi-skip undo.
+- (New, surfaced this session) `nutrition_per_serving` backfill needs a re-run when recipes are added or materially edited. Could be wired into `hh_schedule_new_recipe` flow.
