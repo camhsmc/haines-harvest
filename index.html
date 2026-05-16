@@ -389,13 +389,6 @@
 
   .aisle-body { padding: 14px 20px; }
 
-  .item-store-tag {
-    font-size: 0.72rem;
-    color: var(--warm-gray);
-    font-weight: 500;
-    margin-left: 6px;
-  }
-
   .item-side-tag {
     font-size: 0.7rem;
     color: var(--green);
@@ -1668,10 +1661,6 @@ function aisleFor(name) {
   for (const r of AISLE_RULES) if (r.match.test(name)) return r.aisle;
   return 'Other';
 }
-const STORE_LABELS = {
-  costco: 'Costco', aldi: 'Aldi', festival_foods: 'Festival',
-  any: '', leftover: 'leftover'
-};
 
 const ORDERED_DAYS = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
 const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
@@ -2206,10 +2195,8 @@ function aggregateStoreItems(items) {
     const name = canonicalName(it.name);
     if (!name) continue;
     const g = groups[name] = groups[name] || {
-      name, byClass: {}, byCount: {}, noQty: false,
-      stores: new Set(), isSide: true
+      name, byClass: {}, byCount: {}, noQty: false, isSide: true
     };
-    if (it.store && it.store !== 'any') g.stores.add(it.store);
     if (!it.isSide) g.isSide = false;
     const unit = normalizeUnit(it.unit);
     const amt = parseAmount(it.amount);
@@ -2236,7 +2223,6 @@ function aggregateStoreItems(items) {
     return {
       name: g.name, lines,
       noQty: g.noQty && lines.length === 0,
-      stores: Array.from(g.stores),
       isSide: g.isSide
     };
   }).sort((a, b) => a.name.localeCompare(b.name));
@@ -2531,9 +2517,10 @@ function groceryItems() {
       const excludedSet = new Set((meal.excludedIngredients || []).map(canonicalName));
       for (const ing of (meal.recipe.ingredients || [])) {
         if (excludedSet.has(canonicalName(ing.name))) continue;  // reusing leftovers
+        const store = (ing.store || 'any').toLowerCase();
+        if (store === 'leftover') continue;  // already on hand — don't shop
         items.push({
-          name: ing.name, amount: ing.amount, unit: ing.unit,
-          store: (ing.store || 'any').toLowerCase(),
+          name: ing.name, amount: ing.amount, unit: ing.unit, store,
           recipeName: meal.recipe.title, day: dayAbbrev,
           isSide: false
         });
@@ -2542,9 +2529,10 @@ function groceryItems() {
     // Weekly extras are conceptually grocery-list-only (milk, eggs, bread).
     // Always include them — even on leftover meals — since they're independent of the recipe.
     for (const ing of (meal.extraIngredients || [])) {
+      const store = (ing.store || 'any').toLowerCase();
+      if (store === 'leftover') continue;
       items.push({
-        name: ing.name, amount: ing.amount, unit: ing.unit,
-        store: (ing.store || 'any').toLowerCase(),
+        name: ing.name, amount: ing.amount, unit: ing.unit, store,
         recipeName: 'Weekly Extras', day: dayAbbrev,
         isSide: false
       });
@@ -2623,11 +2611,8 @@ function renderShopping() {
             ? it.lines.map(l => describeLine(l, it.name)).join(' + ')
             : '';
           const name = titleCase(it.name);
-          const storeTag = it.stores && it.stores.length
-            ? ` <span class="item-store-tag">(${it.stores.map(s => STORE_LABELS[s] || s).filter(Boolean).join(', ')})</span>`
-            : '';
           const sideTag = it.isSide ? ' <span class="item-side-tag">side</span>' : '';
-          const label = (qty ? `<strong>${qty}</strong> · ${name}` : name) + storeTag + sideTag;
+          const label = (qty ? `<strong>${qty}</strong> · ${name}` : name) + sideTag;
           return `
             <div class="shopping-item ${checked ? 'checked' : ''}" id="item-${id}">
               <input type="checkbox" id="cb-${id}" ${checked ? 'checked' : ''} onchange="toggleItem('${id}')">
