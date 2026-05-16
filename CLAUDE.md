@@ -204,3 +204,49 @@ Cam called the list "not accurate." Punch list found:
 - Validate the bulk PACK_SIZES sweep — Cam to flag any line that still looks weird after the next refresh.
 - (Carryover) Vacation mode, recipe 19 reframing, breakfast/lunch in grocery list, sauces in grams primary, multi-skip undo.
 - (New, surfaced this session) `nutrition_per_serving` backfill needs a re-run when recipes are added or materially edited. Could be wired into `hh_schedule_new_recipe` flow.
+
+---
+
+## 2026-05-16 — v2.5: sides as first-class fields + unified aisle grocery list
+
+Scoped build per Cerebro Note 296 ("Haines Harvest v2.5 Build Spec"). Two pains Cam hits every week:
+1. Side dishes weren't in the grocery list — he maintained a parallel list in chat
+2. Grocery list split by store (Costco / Aldi / Festival) when he just wants one unified, aisle-sorted list
+
+### Schema changes (`hh_meal_plan`)
+- **Added** `carb_side text`, `veggie_side text`, `side_notes text` — first-class side fields.
+- **Dropped** legacy `side text` column. It was added 2026-04-28 but only 4 rows ever used it; Cam moved to tagging in `notes` as `SIDE:` / `CARB:` instead.
+- Backfilled new columns from the SIDE/CARB tags in `notes` (10 rows). When a row had both an old `side` value and a newer `SIDE:` tag in notes, the notes tag won (those `side` values were mostly stale rotation template artifacts). The Smash Burgers row (id 14, side="Rice + black beans + avocado") was dropped entirely — fries are already the carb in the title.
+
+### App changes (`index.html`)
+- **`buildMeal`** now reads `carbSide` / `veggieSide` / `sideNotes` (replaced `veggie: row.side || row.side_dish`).
+- **Today card**: two lines under the meal name — `🍚 {carbSide}` + `🥦 {veggieSide}` + a smaller italic line for `sideNotes`. New CSS classes `.today-sides`, `.today-side-line`, `.today-side-notes`. Replaces single `.today-veggie` row.
+- **7-Day card**: same two-line treatment, reusing `.meal-veggie`.
+- **Read-only** — no inline editing UI. Cam edits sides via Claude/SQL just like recipes (deliberate v2.5 scope cut; spec called for tap-to-edit but he didn't want the complexity).
+
+### Grocery list overhaul
+- **Sides feed the list.** New `groceryItems()` emits name-only entries per `carbSide` / `veggieSide`, split on `+` so "Mashed potatoes + green salad" → two items. Aggregator's `noQty` path renders them as bare names.
+- **One unified list, 8 aisles** (down from the spec's 14, agreed simpler with Cam): Produce, Meat & Seafood, Dairy & Eggs, Bakery & Bread, Frozen, Canned & Jarred, Pantry & Dry Goods, Other. Spices, condiments, oils, vinegars all folded into Pantry; deli into Dairy & Eggs. Each aisle renders as its own `.aisle-card` with an emoji icon.
+- **Store info demoted to annotation.** Ingredient `store` is no longer a primary grouping key — it appears as a small `(Aldi)` / `(Costco, Festival)` tag next to the item name. `STORE_LABELS` map drives display. Sides show no store tag (v1).
+- **`STORE_DEFS` / `STORE_ORDER` deleted.** `groceryListByStore()` → `groceryItems()` (flat list). `aggregateStoreItems()` now also tracks `stores: string[]` and `isSide: boolean` per canonical group. `clearStore(key)` → `clearAllChecks()` (one button below the list).
+- **AISLE_RULES additions:** `green beans?` (Produce, ordered before Canned beans), `edamame` (Frozen), `tomato sauce` (Canned), `bbq|barbecue` (Pantry), `cornstarch` / `noodles?` (Pantry), `asparagus|salad|strawberr(y|ies)|apples?|bananas?|berries|mangoes?` (Produce), `ribs` (Meat), `black/pinto/kidney beans|chickpeas|garbanzo` (Canned).
+- **Print CSS** rewritten for 2-col aisle cards instead of 3-col store cards. Header copy "organized by store" → "organized by aisle" in both the page subtitle and the print-bar tooltip.
+
+### Verification
+- Headless JSC at `/tmp/hh_jsc.mjs` runs `loadData()` against live Supabase, then exercises `groceryItems()` → `aggregateStoreItems()` → aisle grouping for the current shop week (5/16–5/22). 74 canonical items distributed across all 8 aisles. All 5 sides (Roasted brussels sprouts, Jasmine rice, Edamame, Steamed broccoli, Guacamole+salsa) routed to expected aisles with `[SIDE]` tag. Only `Water` falls to "Other" — fine.
+- Browser smoke test still needed on iPhone PWA.
+
+### Forward-compat notes
+- Sides are read-only in-app. Edit via SQL: `UPDATE hh_meal_plan SET carb_side='X', veggie_side='Y' WHERE id=N`. Future Claude sessions can do this directly.
+- The 8-aisle taxonomy is fixed. New ingredient types fall to "Other" unless added to AISLE_RULES — one line each.
+- The Skipped-meal cached fallback (Today view) emits empty `carbSide`/`veggieSide` since the original meal's sides aren't cached in `localStorage.hh_skips`. Not a regression; just worth noting.
+- Cerebro Note 256 ("v3" spec — canonical ingredient model with `hh_ingredients` + `hh_ingredient_aliases`) is the next-tier work. Note 170 roadmap items #7 (store-split removal) and #11 (sides Path A) are now both done.
+
+### Status
+- All changes deployed via GitHub Pages (commit on `main`, see commit log).
+- Real-world iPhone PWA confirmation pending Cam's next refresh.
+
+### Next / open
+- Browser/PWA smoke test on iPhone (Today + 7-Day + Grocery list).
+- (Carryover) Vacation mode, recipe 19 reframing, breakfast/lunch support, sauces in grams primary, multi-skip undo, servings stepper on Log button.
+- (Deferred from v2.5) Sides-as-recipes (Path B in Note 170 roadmap #11) and full canonical-ingredient model (Note 256).

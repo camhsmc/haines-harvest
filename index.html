@@ -348,49 +348,54 @@
 
   /* ─── SHOPPING LIST ─── */
   .shopping-layout {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-width: 720px;
+    margin: 0 auto;
   }
 
-  @media (max-width: 900px) {
-    .shopping-layout { grid-template-columns: 1fr; }
-  }
-
-  .store-card {
+  .aisle-card {
     background: white;
     border-radius: 16px;
     overflow: hidden;
     box-shadow: 0 2px 12px var(--shadow);
   }
 
-  .store-header {
-    padding: 16px 20px;
+  .aisle-header {
+    padding: 14px 20px;
+    background: var(--green);
     color: white;
     display: flex;
     align-items: center;
     gap: 10px;
   }
 
-  .store-card:nth-child(1) .store-header { background: var(--rust); }
-  .store-card:nth-child(2) .store-header { background: var(--green); }
-  .store-card:nth-child(3) .store-header { background: #8B6914; }
+  .aisle-icon { font-size: 1.4rem; }
 
-  .store-icon { font-size: 1.5rem; }
-
-  .store-name {
+  .aisle-name {
     font-family: 'Playfair Display', serif;
     font-size: 1.1rem;
     font-weight: 700;
   }
 
-  .store-subtitle {
-    font-size: 0.75rem;
-    opacity: 0.85;
-    margin-top: 1px;
+  .aisle-body { padding: 14px 20px; }
+
+  .item-store-tag {
+    font-size: 0.72rem;
+    color: var(--warm-gray);
+    font-weight: 500;
+    margin-left: 6px;
   }
 
-  .store-body { padding: 16px 20px; }
+  .item-side-tag {
+    font-size: 0.7rem;
+    color: var(--green);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-left: 6px;
+  }
 
   .shopping-category {
     margin-bottom: 14px;
@@ -888,33 +893,28 @@
 
     .shopping-layout {
       display: grid !important;
-      grid-template-columns: repeat(3, 1fr) !important;
-      gap: 14px !important;
+      grid-template-columns: repeat(2, 1fr) !important;
+      gap: 12px !important;
+      max-width: 100% !important;
     }
 
-    .store-card {
+    .aisle-card {
       box-shadow: none !important;
       border: 1.5px solid #ccc !important;
       border-radius: 8px !important;
       break-inside: avoid;
     }
 
-    .store-header {
-      padding: 10px 14px !important;
+    .aisle-header {
+      padding: 8px 12px !important;
+      background: #3A6B4A !important;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     }
 
-    .store-card:nth-child(1) .store-header { background: #C4622D !important; }
-    .store-card:nth-child(2) .store-header { background: #3A6B4A !important; }
-    .store-card:nth-child(3) .store-header { background: #8B6914 !important; }
-
-    .store-name { font-size: 11px !important; }
-    .store-subtitle { font-size: 8px !important; }
-    .store-body { padding: 10px 12px !important; }
-
-    .shopping-category { margin-bottom: 8px !important; }
-    .shopping-category h4 { font-size: 7px !important; margin-bottom: 4px !important; }
+    .aisle-name { font-size: 11px !important; }
+    .aisle-icon { font-size: 13px !important; }
+    .aisle-body { padding: 8px 12px !important; }
 
     .shopping-item { padding: 2px 0 !important; }
     .shopping-item label { font-size: 8.5px !important; }
@@ -1073,11 +1073,20 @@
     line-height: 1.3;
   }
 
-  .today-veggie {
+  .today-sides {
     font-size: 0.9rem;
     color: var(--green);
     font-weight: 600;
+    margin-bottom: 6px;
+    line-height: 1.5;
+  }
+  .today-sides .today-side-line { display: block; }
+  .today-side-notes {
+    font-size: 0.8rem;
+    color: var(--warm-gray);
+    font-style: italic;
     margin-bottom: 8px;
+    line-height: 1.4;
   }
 
   .today-note {
@@ -1381,9 +1390,8 @@
       gap: 12px;
     }
 
-    /* Shopping: already 1-col at 900px, just tighten spacing */
-    .store-body { padding: 12px 14px; }
-    .shopping-category h4 { font-size: 0.65rem; }
+    /* Shopping: tighten spacing on mobile */
+    .aisle-body { padding: 12px 14px; }
     .shopping-item label { font-size: 0.84rem; }
 
     /* Print bar: stack on mobile */
@@ -1453,7 +1461,8 @@
     <div class="today-card" id="todayCard">
       <div class="today-emoji" id="todayEmoji"></div>
       <div class="today-meal-name" id="todayMealName"></div>
-      <div class="today-veggie" id="todayVeggie"></div>
+      <div class="today-sides" id="todaySides"></div>
+      <div class="today-side-notes" id="todaySideNotes"></div>
       <div class="today-note" id="todayNote"></div>
       <div class="today-tags" id="todayTags"></div>
       <div class="today-card-actions">
@@ -1520,7 +1529,7 @@
   <div id="view-shopping" class="view">
     <div class="page-header">
       <h2>Grocery List</h2>
-      <p>Saturday → Friday shopping week. Auto-derived from the meal plan, organized by store. Check off items as you shop.</p>
+      <p>Saturday → Friday shopping week. Auto-derived from the meal plan, organized by aisle. Check off items as you shop.</p>
     </div>
 
     <div class="grocery-week-nav">
@@ -1531,7 +1540,7 @@
     </div>
 
     <div class="print-bar">
-      <span class="print-bar-text"><strong>Ready to shop?</strong> List is organized by store. Print or save as PDF for an easy one-page reference.</span>
+      <span class="print-bar-text"><strong>Ready to shop?</strong> List is organized by aisle. Print or save as PDF for an easy one-page reference.</span>
       <button class="print-btn" onclick="printList()">🖨️ Print / Save as PDF</button>
     </div>
 
@@ -1614,40 +1623,47 @@ const TAG_META = {
 const TAG_PRIORITY = ['leftover','pizza','burger','pasta','crockpot','air_fryer','grill','sheet_pan','mexican','salad','bowl','pita','sauce','dressing','condiment'];
 const FALLBACK_META = { category: 'Dinner', emoji: '🍽️', color: '#7A7268', bg: '#F5F0E8', tool: 'Stovetop' };
 
-const STORE_DEFS = {
-  costco:         { label: 'Costco',         subtitle: 'Woodbury, MN · Stock up when low', icon: '🏪' },
-  aldi:           { label: 'Aldi',           subtitle: 'Hudson, WI · Every Saturday',      icon: '🛒' },
-  festival_foods: { label: 'Festival Foods', subtitle: 'Hudson, WI · Gap fillers',         icon: '🧺' },
-  any:            { label: 'Any Store',      subtitle: 'Pantry / general',                 icon: '🥫' },
-  leftover:       { label: 'On Hand',        subtitle: 'Use leftovers — no purchase',      icon: '♻️' }
-};
-const STORE_ORDER = ['costco','aldi','festival_foods','any','leftover'];
 
-// Aisle grouping inside each store. Order = display order in the rendered list.
-// AISLE_RULES is checked in declared order; first regex match wins. Put more
-// specific rules (Frozen, Bakery) before broad ones (Produce).
+// Unified 8-aisle taxonomy. Order = display order. First regex match wins.
+// Specific rules (broth, green beans, frozen) come before broad ones.
 const AISLES_ORDER = [
   'Produce', 'Meat & Seafood', 'Dairy & Eggs', 'Bakery & Bread',
-  'Frozen', 'Canned & Jarred', 'Pantry & Dry Goods',
-  'Condiments, Sauces & Oils', 'Spices', 'Other'
+  'Frozen', 'Canned & Jarred', 'Pantry & Dry Goods', 'Other'
 ];
+const AISLE_ICONS = {
+  'Produce': '🥬',
+  'Meat & Seafood': '🥩',
+  'Dairy & Eggs': '🧀',
+  'Bakery & Bread': '🍞',
+  'Frozen': '🧊',
+  'Canned & Jarred': '🥫',
+  'Pantry & Dry Goods': '🌾',
+  'Other': '🛒'
+};
 const AISLE_RULES = [
   // Broth/stock first — beats the Meat rule's "chicken"
-  { aisle: 'Pantry & Dry Goods',        match: /\b(chicken broth|beef broth|vegetable broth|broth|stock)\b/ },
-  { aisle: 'Frozen',                    match: /\bfrozen\b/ },
-  { aisle: 'Bakery & Bread',            match: /\b(naan|tortillas?|pitas?|buns?|breads?|flatbreads?|doughs?|baguettes?|biscuits?|bagels?|chips)\b/ },
-  { aisle: 'Canned & Jarred',           match: /\b(canned|refried|crushed tomatoes?|diced tomatoes?|tomato paste|pizza sauce|marinara|pasta sauce|jarred|sun-dried)\b/ },
-  { aisle: 'Dairy & Eggs',              match: /\b(milk|cream|sour cream|yogurt|cheeses?|mozzarella|parmesan|feta|cottage|ricotta|butter|eggs?)\b/ },
-  { aisle: 'Meat & Seafood',            match: /\b(steaks?|flank|chickens?|sausages?|beef|pork|prosciutto|bacon|ham|tuna|salmon|fish|turkey|protein)\b/ },
-  { aisle: 'Spices',                    match: /\b(salt|pepper|cumin|paprika|chili powder|garlic powder|onion powder|italian seasoning|red pepper flakes|ginger|thyme|oregano|cinnamon|smoked|taco seasoning|seasoning)\b/ },
-  { aisle: 'Condiments, Sauces & Oils', match: /\b(olive oil|sesame|soy sauce|balsamic|vinegar|honey|mustard|ketchup|mayo|tahini|maple|teriyaki|oyster|worcester|pesto|hot sauce|sriracha|peanut butter|salsa|ranch)\b/ },
-  { aisle: 'Pantry & Dry Goods',        match: /\b(pasta|penne|rigatoni|spaghetti|ziti|rice|panko|breadcrumbs?|sugar|flour|walnuts?|almonds?|seeds?|oats?|nuts?)\b/ },
-  { aisle: 'Produce',                   match: /\b(arugula|basil|parsley|cilantro|cucumbers?|garlic|green onions?|lemons?|lettuce|onions?|peppers?|tomatoes?|sweet potatoes?|potatoes?|zucchinis?|avocados?|limes?|broccolis?|carrots?|celery|herbs?|peaches?|spinach|kale|romaine|jalapen|chile|mushrooms?|brussels sprouts?|edamame|corn|green beans?|fruit|veggies?|vegetables?)\b/ }
+  { aisle: 'Pantry & Dry Goods', match: /\b(chicken broth|beef broth|vegetable broth|broth|stock)\b/ },
+  // Green beans → Produce before any "beans" rule could grab them
+  { aisle: 'Produce',            match: /\bgreen beans?\b/ },
+  { aisle: 'Frozen',             match: /\b(frozen|edamame)\b/ },
+  { aisle: 'Bakery & Bread',     match: /\b(naan|tortillas?|pitas?|buns?|breads?|flatbreads?|doughs?|baguettes?|biscuits?|bagels?|chips)\b/ },
+  { aisle: 'Canned & Jarred',    match: /\b(canned|refried|crushed tomatoes?|diced tomatoes?|tomato paste|tomato sauce|pizza sauce|marinara|pasta sauce|jarred|sun-dried|black beans?|pinto beans?|kidney beans?|chickpeas?|garbanzo)\b/ },
+  { aisle: 'Dairy & Eggs',       match: /\b(milk|cream|sour cream|yogurt|cheeses?|mozzarella|parmesan|feta|cottage|ricotta|butter|eggs?)\b/ },
+  { aisle: 'Meat & Seafood',     match: /\b(steaks?|flank|chickens?|sausages?|beef|pork|prosciutto|bacon|ham|tuna|salmon|fish|turkey|protein|ribs)\b/ },
+  // Spices, condiments, sauces, oils all fold into Pantry & Dry Goods (8-aisle simplification)
+  { aisle: 'Pantry & Dry Goods', match: /\b(salt|pepper|cumin|paprika|chili powder|garlic powder|onion powder|italian seasoning|red pepper flakes|ginger|thyme|oregano|cinnamon|smoked|taco seasoning|seasoning)\b/ },
+  { aisle: 'Pantry & Dry Goods', match: /\b(olive oil|sesame|soy sauce|balsamic|vinegar|honey|mustard|ketchup|mayo|tahini|maple|teriyaki|oyster|worcester|pesto|hot sauce|sriracha|peanut butter|salsa|ranch|bbq|barbecue)\b/ },
+  { aisle: 'Pantry & Dry Goods', match: /\b(pasta|penne|rigatoni|spaghetti|ziti|noodles?|rice|panko|breadcrumbs?|sugar|flour|cornstarch|walnuts?|almonds?|seeds?|oats?|nuts?)\b/ },
+  { aisle: 'Produce',            match: /\b(arugula|basil|parsley|cilantro|cucumbers?|garlic|green onions?|lemons?|lettuce|onions?|peppers?|tomatoes?|sweet potatoes?|potatoes?|zucchinis?|avocados?|limes?|broccolis?|carrots?|celery|herbs?|peaches?|spinach|kale|romaine|jalapen|chile|mushrooms?|brussels sprouts?|corn|fruit|veggies?|vegetables?|asparagus|salad|strawberr(y|ies)|apples?|bananas?|berries|mangoes?)\b/ }
 ];
 function aisleFor(name) {
   for (const r of AISLE_RULES) if (r.match.test(name)) return r.aisle;
   return 'Other';
 }
+const STORE_LABELS = {
+  costco: 'Costco', aldi: 'Aldi', festival_foods: 'Festival',
+  any: '', leftover: 'leftover'
+};
 
 const ORDERED_DAYS = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
 const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
@@ -2181,7 +2197,12 @@ function aggregateStoreItems(items) {
   for (const it of items) {
     const name = canonicalName(it.name);
     if (!name) continue;
-    const g = groups[name] = groups[name] || { name, byClass: {}, byCount: {}, noQty: false };
+    const g = groups[name] = groups[name] || {
+      name, byClass: {}, byCount: {}, noQty: false,
+      stores: new Set(), isSide: true
+    };
+    if (it.store && it.store !== 'any') g.stores.add(it.store);
+    if (!it.isSide) g.isSide = false;
     const unit = normalizeUnit(it.unit);
     const amt = parseAmount(it.amount);
     if (NO_QTY_UNITS.has(unit) && amt == null) { g.noQty = true; continue; }
@@ -2204,7 +2225,12 @@ function aggregateStoreItems(items) {
     for (const [unit, amount] of Object.entries(g.byCount)) {
       lines.push({ unit, amount, variants: [{ unit, amount }] });
     }
-    return { name: g.name, lines, noQty: g.noQty && lines.length === 0 };
+    return {
+      name: g.name, lines,
+      noQty: g.noQty && lines.length === 0,
+      stores: Array.from(g.stores),
+      isSide: g.isSide
+    };
   }).sort((a, b) => a.name.localeCompare(b.name));
 }
 
@@ -2304,10 +2330,13 @@ function templateRowForDate(date) {
   return week.find(t => (t.day_of_week || '').toLowerCase() === dn) || null;
 }
 
-// Resolve a meal for a date: prefer plan row, fall back to template.
+// Resolve a meal for a date: a plan row IS a manual override — it always
+// wins over the template, even if recipe_id is null (title-only swap).
 function mealForDate(date) {
   const planRow = planRowForDate(date);
-  if (planRow && planRow.recipe_id) return buildMeal(date, planRow, 'plan');
+  if (planRow && (planRow.recipe_id || planRow.recipe_title)) {
+    return buildMeal(date, planRow, 'plan');
+  }
   const tpl = templateRowForDate(date);
   if (tpl && tpl.recipe_id) return buildMeal(date, tpl, 'template');
   return null;
@@ -2323,11 +2352,13 @@ function buildMeal(date, row, source) {
     source,
     recipeId: row.recipe_id,
     recipeKey: String(row.recipe_id),
-    name: row.recipe_title || (recipe && recipe.title) || '(unknown)',
+    name: (recipe && recipe.title) || row.recipe_title || '(unknown)',
     emoji: recipe ? recipeMeta(tags).emoji : '🍽️',
     isHit: tags.includes('kid_favorite'),
     isLeftover: tags.includes('leftover'),
-    veggie: row.side || row.side_dish || '',
+    carbSide: row.carb_side || '',
+    veggieSide: row.veggie_side || '',
+    sideNotes: row.side_notes || '',
     note: row.notes || '',
     carryover: !!row.carryover,
     editedByUser: !!row.edited_by_user,
@@ -2423,7 +2454,8 @@ function renderCalendar() {
           ${shoppingBadge}
           ${meal.isLeftover ? '<span class="leftover-badge">♻️ Leftover Remix</span>' : ''}
           <div class="meal-name">${meal.name}</div>
-          ${meal.veggie ? `<span class="meal-veggie">🥦 ${meal.veggie}</span>` : ''}
+          ${meal.carbSide   ? `<span class="meal-veggie">🍚 ${meal.carbSide}</span>`   : ''}
+          ${meal.veggieSide ? `<span class="meal-veggie">🥦 ${meal.veggieSide}</span>` : ''}
           ${meal.note ? `<div class="meal-note">${meal.note}</div>` : ''}
         </div>
       </div>`;
@@ -2466,39 +2498,54 @@ function renderRotation() {
 // ═══════════════════════════════════════
 // GROCERY LIST (Sat–Fri shopping week, anchored to Cam's Saturday shop trip)
 // ═══════════════════════════════════════
-function groceryListByStore() {
+// Split a side text like "Mashed potatoes + green salad" into discrete items.
+function splitSideText(s) {
+  return (s || '').split(/\s*[+,]\s*/).map(t => t.trim()).filter(Boolean);
+}
+
+// Flat list of every line for the current shop week. Sides are name-only
+// (amount/unit null) so aggregateStoreItems renders them as bare names.
+function groceryItems() {
   const start = groceryWeekStart();
   const days = dateRangeDays(start, 7);
-  const byStore = {};
+  const items = [];
   for (const d of days) {
     const meal = mealForDate(d);
-    if (!meal || !meal.recipe) continue;
+    if (!meal) continue;
     if (meal.carryover) continue;  // skipped → already shopped for last week
-    const excludedSet = new Set((meal.excludedIngredients || []).map(canonicalName));
-    for (const ing of (meal.recipe.ingredients || [])) {
-      if (excludedSet.has(canonicalName(ing.name))) continue;  // reusing leftovers
-      const store = (ing.store || 'any').toLowerCase();
-      (byStore[store] = byStore[store] || []).push({
-        name: ing.name,
-        amount: ing.amount,
-        unit: ing.unit,
-        recipeName: meal.recipe.title,
-        day: DAY_ABBREVS[d.getDay()]
-      });
+    const dayAbbrev = DAY_ABBREVS[d.getDay()];
+    if (meal.recipe) {
+      const excludedSet = new Set((meal.excludedIngredients || []).map(canonicalName));
+      for (const ing of (meal.recipe.ingredients || [])) {
+        if (excludedSet.has(canonicalName(ing.name))) continue;  // reusing leftovers
+        items.push({
+          name: ing.name, amount: ing.amount, unit: ing.unit,
+          store: (ing.store || 'any').toLowerCase(),
+          recipeName: meal.recipe.title, day: dayAbbrev,
+          isSide: false
+        });
+      }
+      for (const ing of (meal.extraIngredients || [])) {
+        items.push({
+          name: ing.name, amount: ing.amount, unit: ing.unit,
+          store: (ing.store || 'any').toLowerCase(),
+          recipeName: 'Weekly Extras', day: dayAbbrev,
+          isSide: false
+        });
+      }
     }
-    // Ad-hoc extras attached to this plan row (e.g., milk, eggs that aren't in any recipe).
-    for (const ing of (meal.extraIngredients || [])) {
-      const store = (ing.store || 'any').toLowerCase();
-      (byStore[store] = byStore[store] || []).push({
-        name: ing.name,
-        amount: ing.amount,
-        unit: ing.unit,
-        recipeName: 'Weekly Extras',
-        day: DAY_ABBREVS[d.getDay()]
-      });
+    // Sides — name-only, no quantity, no store metadata (v1).
+    for (const sideText of [meal.carbSide, meal.veggieSide]) {
+      for (const piece of splitSideText(sideText)) {
+        items.push({
+          name: piece, amount: null, unit: null, store: 'any',
+          recipeName: meal.name || 'Side', day: dayAbbrev,
+          isSide: true
+        });
+      }
     }
   }
-  return byStore;
+  return items;
 }
 
 function updatePrintHeader() {
@@ -2534,57 +2581,46 @@ function renderShopping() {
   }
   if (todayBtn) todayBtn.style.display = groceryWeekOffset === 0 ? 'none' : '';
   const layout = document.getElementById('shopping-layout');
-  const byStoreRaw = groceryListByStore();
-  const byStore = {};
-  for (const k of Object.keys(byStoreRaw)) byStore[k] = aggregateStoreItems(byStoreRaw[k]);
-  const stores = STORE_ORDER.filter(k => byStore[k] && byStore[k].length);
-  if (stores.length === 0) {
+  const items = aggregateStoreItems(groceryItems());
+  if (items.length === 0) {
     layout.innerHTML = '<p style="text-align:center;color:var(--warm-gray);padding:2rem">No meals planned for this week.</p>';
     return;
   }
-  layout.innerHTML = stores.map(storeKey => {
-    const def = STORE_DEFS[storeKey] || { label: storeKey, subtitle: '', icon: '🛒' };
-    const items = byStore[storeKey];
-    // Group by aisle, preserve item indices for stable checkbox ids.
-    const byAisle = {};
-    items.forEach((it, idx) => {
-      const a = aisleFor(it.name);
-      (byAisle[a] = byAisle[a] || []).push({ it, idx });
-    });
-    const aislesPresent = AISLES_ORDER.filter(a => byAisle[a] && byAisle[a].length);
-    const sectionsHtml = aislesPresent.map(aisle => `
-      <div class="shopping-category">
-        <h4>${aisle}</h4>
+  // Group by aisle, preserve stable indices for checkbox ids.
+  const byAisle = {};
+  items.forEach((it, idx) => {
+    const a = aisleFor(it.name);
+    (byAisle[a] = byAisle[a] || []).push({ it, idx });
+  });
+  const aislesPresent = AISLES_ORDER.filter(a => byAisle[a] && byAisle[a].length);
+  const clearBtn = '<button class="clear-btn" onclick="clearAllChecks()" style="margin:8px auto 0;display:block">↺ Clear all checks</button>';
+  layout.innerHTML = aislesPresent.map(aisle => `
+    <div class="aisle-card">
+      <div class="aisle-header">
+        <span class="aisle-icon">${AISLE_ICONS[aisle] || '🛒'}</span>
+        <span class="aisle-name">${aisle}</span>
+      </div>
+      <div class="aisle-body">
         ${byAisle[aisle].map(({ it, idx }) => {
-          const id = `${storeKey}-${idx}`;
+          const id = `i-${idx}`;
           const checked = checkedItems[id] || false;
           const qty = it.lines.length
             ? it.lines.map(l => describeLine(l, it.name)).join(' + ')
             : '';
           const name = titleCase(it.name);
-          const label = qty ? `<strong>${qty}</strong> · ${name}` : name;
+          const storeTag = it.stores && it.stores.length
+            ? ` <span class="item-store-tag">(${it.stores.map(s => STORE_LABELS[s] || s).filter(Boolean).join(', ')})</span>`
+            : '';
+          const sideTag = it.isSide ? ' <span class="item-side-tag">side</span>' : '';
+          const label = (qty ? `<strong>${qty}</strong> · ${name}` : name) + storeTag + sideTag;
           return `
             <div class="shopping-item ${checked ? 'checked' : ''}" id="item-${id}">
               <input type="checkbox" id="cb-${id}" ${checked ? 'checked' : ''} onchange="toggleItem('${id}')">
               <label for="cb-${id}">${label}</label>
             </div>`;
         }).join('')}
-      </div>`).join('');
-    return `
-      <div class="store-card">
-        <div class="store-header">
-          <span class="store-icon">${def.icon}</span>
-          <div>
-            <div class="store-name">${def.label}</div>
-            <div class="store-subtitle">${def.subtitle}</div>
-          </div>
-        </div>
-        <div class="store-body">
-          ${sectionsHtml}
-          <button class="clear-btn" onclick="clearStore('${storeKey}')">↺ Clear checks</button>
-        </div>
-      </div>`;
-  }).join('');
+      </div>
+    </div>`).join('') + clearBtn;
 }
 
 function toggleItem(id) {
@@ -2594,10 +2630,8 @@ function toggleItem(id) {
   saveCheckedItemsForWeek();
 }
 
-function clearStore(storeKey) {
-  Object.keys(checkedItems).forEach(k => {
-    if (k.startsWith(storeKey)) checkedItems[k] = false;
-  });
+function clearAllChecks() {
+  checkedItems = {};
   saveCheckedItemsForWeek();
   renderShopping();
 }
@@ -2783,7 +2817,9 @@ function renderToday() {
       emoji: origRecipe ? recipeMeta(tags).emoji : '🍽️',
       isHit: tags.includes('kid_favorite'),
       isLeftover: tags.includes('leftover'),
-      veggie: '',
+      carbSide: '',
+      veggieSide: '',
+      sideNotes: '',
       note: movedDate ? `↳ Moved to ${DAY_ABBREVS[movedDate.getDay()]} ${MONTH_NAMES[movedDate.getMonth()].slice(0,3)} ${movedDate.getDate()}` : '',
       recipe: origRecipe
     };
@@ -2793,7 +2829,8 @@ function renderToday() {
     document.getElementById('todayWeekLabel').textContent = '';
     document.getElementById('todayEmoji').textContent = '📅';
     document.getElementById('todayMealName').textContent = 'No meal planned';
-    document.getElementById('todayVeggie').textContent = '';
+    document.getElementById('todaySides').innerHTML = '';
+    document.getElementById('todaySideNotes').textContent = '';
     document.getElementById('todayNote').textContent = '';
     document.getElementById('todayTags').innerHTML = '';
     document.getElementById('todayRecipeBtn').style.display = 'none';
@@ -2814,7 +2851,12 @@ function renderToday() {
     info ? ('Rotation Week ' + info.rotationWeek + ' of 4') : '';
   document.getElementById('todayEmoji').textContent = meal.emoji;
   document.getElementById('todayMealName').textContent = meal.name;
-  document.getElementById('todayVeggie').textContent = meal.veggie ? '🥦 ' + meal.veggie : '';
+  const sidesHtml = [
+    meal.carbSide   ? `<span class="today-side-line">🍚 ${meal.carbSide}</span>`   : '',
+    meal.veggieSide ? `<span class="today-side-line">🥦 ${meal.veggieSide}</span>` : ''
+  ].join('');
+  document.getElementById('todaySides').innerHTML = sidesHtml;
+  document.getElementById('todaySideNotes').textContent = meal.sideNotes || '';
   document.getElementById('todayNote').textContent = meal.note || '';
   document.getElementById('todayRecipeBtn').style.display = '';
 
