@@ -348,11 +348,19 @@
 
   /* ─── SHOPPING LIST ─── */
   .shopping-layout {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
     gap: 16px;
-    max-width: 720px;
+    max-width: 1200px;
     margin: 0 auto;
+    align-items: start;
+  }
+
+  @media (max-width: 1000px) {
+    .shopping-layout { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 700px) {
+    .shopping-layout { grid-template-columns: 1fr; }
   }
 
   .aisle-card {
@@ -2359,6 +2367,11 @@ function buildMeal(date, row, source) {
     carbSide: row.carb_side || '',
     veggieSide: row.veggie_side || '',
     sideNotes: row.side_notes || '',
+    // Plan-row title prefix "Leftover " signals "I'm eating yesterday's food
+    // — don't buy any ingredients." Recipe tag `leftover` is intentionally NOT
+    // used here because some leftover-tagged recipes (e.g. Fried Rice with
+    // leftover flank) still need fresh ingredients bought.
+    isLeftoverMeal: /^leftover\b/i.test(row.recipe_title || ''),
     note: row.notes || '',
     carryover: !!row.carryover,
     editedByUser: !!row.edited_by_user,
@@ -2514,7 +2527,7 @@ function groceryItems() {
     if (!meal) continue;
     if (meal.carryover) continue;  // skipped → already shopped for last week
     const dayAbbrev = DAY_ABBREVS[d.getDay()];
-    if (meal.recipe) {
+    if (meal.recipe && !meal.isLeftoverMeal) {
       const excludedSet = new Set((meal.excludedIngredients || []).map(canonicalName));
       for (const ing of (meal.recipe.ingredients || [])) {
         if (excludedSet.has(canonicalName(ing.name))) continue;  // reusing leftovers
@@ -2525,14 +2538,16 @@ function groceryItems() {
           isSide: false
         });
       }
-      for (const ing of (meal.extraIngredients || [])) {
-        items.push({
-          name: ing.name, amount: ing.amount, unit: ing.unit,
-          store: (ing.store || 'any').toLowerCase(),
-          recipeName: 'Weekly Extras', day: dayAbbrev,
-          isSide: false
-        });
-      }
+    }
+    // Weekly extras are conceptually grocery-list-only (milk, eggs, bread).
+    // Always include them — even on leftover meals — since they're independent of the recipe.
+    for (const ing of (meal.extraIngredients || [])) {
+      items.push({
+        name: ing.name, amount: ing.amount, unit: ing.unit,
+        store: (ing.store || 'any').toLowerCase(),
+        recipeName: 'Weekly Extras', day: dayAbbrev,
+        isSide: false
+      });
     }
     // Sides — name-only, no quantity, no store metadata (v1).
     for (const sideText of [meal.carbSide, meal.veggieSide]) {
@@ -2593,7 +2608,7 @@ function renderShopping() {
     (byAisle[a] = byAisle[a] || []).push({ it, idx });
   });
   const aislesPresent = AISLES_ORDER.filter(a => byAisle[a] && byAisle[a].length);
-  const clearBtn = '<button class="clear-btn" onclick="clearAllChecks()" style="margin:8px auto 0;display:block">↺ Clear all checks</button>';
+  const clearBtn = '<button class="clear-btn" onclick="clearAllChecks()" style="margin:8px auto 0;display:block;grid-column:1/-1">↺ Clear all checks</button>';
   layout.innerHTML = aislesPresent.map(aisle => `
     <div class="aisle-card">
       <div class="aisle-header">
