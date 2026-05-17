@@ -246,6 +246,17 @@ Scoped build per Cerebro Note 296 ("Haines Harvest v2.5 Build Spec"). Two pains 
 - All changes deployed via GitHub Pages (commit on `main`, see commit log).
 - Real-world iPhone PWA confirmation pending Cam's next refresh.
 
+### Follow-up iterations same session (commits `a9a04b3`, `089ddb4`)
+Cam opened the live page and surfaced three issues; addressed them in two commits.
+
+- **Leftover meals were pulling in their recipe ingredients.** Sat 5/16's "Leftover Lasagna" row points to the Traditional Lasagna recipe (`recipe_id=32`), so noodles, ricotta, mozzarella, ground beef, etc. were all on the list. New rule: if `row.recipe_title` starts with /^leftover\b/i, skip recipe + extras (sides still flow). Caught 14 items off the 5/16 list. Note: the recipe-level `leftover` tag was intentionally NOT used as the signal — recipes like "Fried Rice (Leftover Flank Steak)" still need fresh ingredients bought. Title prefix is the cleaner convention. (`a9a04b3`)
+- **3-column desktop grocery layout.** Single column wasted screen real estate. Switched `.shopping-layout` from `flex column` to CSS grid: 3 cols ≥1000px, 2 cols ≥700px, 1 col below. Clear-checks button spans full row with `grid-column:1/-1`. Mobile layout unchanged. (`a9a04b3`)
+- **Store annotations + `store='leftover'` ingredients still showing.** Cam didn't want the `(Aldi)/(Costco)` tags next to items, and "Leftover Chipotle Beef" / "Leftover Flank Steak" / "Day-Old Cooked Rice" (all marked `store='leftover'` in recipe JSON, conceptually "use what you have") were still appearing as items to buy. Two fixes: (1) `groceryItems()` skips any ingredient whose `store === 'leftover'`; (2) removed the store tag from the rendered label. Cleaned out dead code: `STORE_LABELS` const, `.item-store-tag` CSS, and the `stores: Set` tracking in `aggregateStoreItems`. Final this-week count: 57 items, zero with "leftover" in the name. (`089ddb4`)
+
+### Forward-compat carryover from follow-ups
+- **"Leftover " title prefix is now a load-bearing convention.** If Cam wants a meal to skip its recipe ingredients from the grocery list, the plan-row `recipe_title` must start with "Leftover " (case-insensitive). Sides + `extra_ingredients` still flow. Document on future plan-row insertions.
+- **`store: 'leftover'` on a recipe ingredient now means "never shop for this."** Previously these showed under an "On Hand" store card (deleted earlier this session); now they're filtered entirely. Existing canonical use: leftover proteins (chipotle beef, flank steak) and day-old rice carried over from a prior week's bulk cook.
+
 ### Next / open
 - Browser/PWA smoke test on iPhone (Today + 7-Day + Grocery list).
 - (Carryover) Vacation mode, recipe 19 reframing, breakfast/lunch support, sauces in grams primary, multi-skip undo, servings stepper on Log button.
